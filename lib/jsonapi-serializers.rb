@@ -1,4 +1,4 @@
-require "jsonapi/serializers/version"
+require "jsonapi-serializers/version"
 
 module JSONAPI
   module Serializers
