@@ -45,6 +45,7 @@ module JSONAPI
         "#{self_link}/#{name}"
       end
 
+      # Override to provide resource-object-level meta data.
       def meta
       end
 

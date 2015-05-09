@@ -17,7 +17,19 @@ module MyApp
     attr_accessor :name
   end
 
-  class SimplePostSerializer
+  class PostSerializer
+    include JSONAPI::Serializer
+
+    attribute :title
+    attribute :long_content do
+      object.body
+    end
+
+    has_one :author
+    has_many :comments
+  end
+
+  class SimplestPostSerializer
     include JSONAPI::Serializer
 
     attribute :title
@@ -30,7 +42,7 @@ module MyApp
     end
   end
 
-  class PostSerializer
+  class PostSerializerWithMetadata
     include JSONAPI::Serializer
 
     attribute :title
@@ -38,8 +50,18 @@ module MyApp
       object.body
     end
 
-    has_one :author
-    has_many :comments
+    def type
+      'posts'
+    end
+
+    def meta
+      {
+        'copyright' => 'Copyright 2015 Example Corp.',
+        'authors' => [
+          'Aliens'
+        ]
+      }
+    end
   end
 
   class CommentSerializer
