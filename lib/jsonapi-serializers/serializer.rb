@@ -163,15 +163,15 @@ module JSONAPI
 
           # Starting with every primary root object, recursively search and find objects that match
           # the given include paths.
-          included_objects_set = Set.new
           objects = is_multiple ? objects : [objects]
-
+          included_objects = Set.new
           objects.each do |obj|
-            find_recursive_relationships(obj, parsed_relationship_map, included_objects_set)
+            included_objects.merge(find_recursive_relationships(obj, parsed_relationship_map))
           end
-          result['included'] = included_objects_set.to_a
+          result['included'] = included_objects.to_a.map do |obj|
+            find_serializer_class(obj).serialize_primary(obj)
+          end
         end
-
         result
       end
 
@@ -211,7 +211,8 @@ module JSONAPI
       protected :serialize_primary
 
       # Recursively find object relationships and add them to the result set.
-      def find_recursive_relationships(root_object, parsed_relationship_map, result_set)
+      def find_recursive_relationships(root_object, parsed_relationship_map, result_set = nil)
+        result_set = Set.new
         parsed_relationship_map.each do |attr_name, value|
           serializer = find_serializer(root_object)
           unformatted_attr_name = serializer.unformat_attribute_name(attr_name)
@@ -240,13 +241,14 @@ module JSONAPI
             # Include the current level objects if the attribute exists.
             objects = is_multiple ? object : [object]
             objects.each do |obj|
-              result_set << find_serializer_class(obj).serialize_primary(obj)
+              result_set << obj
             end
           end
 
           # Recurse deeper!
           # find_recursive_relationships()
         end
+        result_set
       end
       protected :find_recursive_relationships
 
