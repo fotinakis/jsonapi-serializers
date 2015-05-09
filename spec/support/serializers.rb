@@ -4,6 +4,7 @@ module MyApp
     attr_accessor :title
     attr_accessor :body
     attr_accessor :author
+    attr_accessor :comments
   end
 
   class Comment
@@ -38,9 +39,8 @@ module MyApp
     end
 
     has_one :author
-    # has_many :comments
+    has_many :comments
   end
-
 
   class CommentSerializer
     include JSONAPI::Serializer

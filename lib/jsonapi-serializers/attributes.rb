@@ -28,6 +28,10 @@ module JSONAPI
         add_to_one_association(name, options)
       end
 
+      def has_many(name, options = {})
+        add_to_many_association(name, options)
+      end
+
       def add_attribute(name, options = {}, &block)
         # Blocks are optional and can override the default attribute discovery. They are just
         # stored here, but evaluated by the Serializer within the instance context.
@@ -42,7 +46,15 @@ module JSONAPI
         @to_one_associations ||= {}
         @to_one_associations[name] = block_given? ? block : name
       end
-      private :add_attribute
+      private :add_to_one_association
+
+      def add_to_many_association(name, options = {}, &block)
+        # Blocks are optional and can override the default attribute discovery. They are just
+        # stored here, but evaluated by the Serializer within the instance context.
+        @to_many_associations ||= {}
+        @to_many_associations[name] = block_given? ? block : name
+      end
+      private :add_to_many_association
     end
   end
 end

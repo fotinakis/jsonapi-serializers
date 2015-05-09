@@ -63,13 +63,7 @@ module JSONAPI
       def attributes
         attributes = {}
         self.class.attributes_map.each do |attr_name, attr_name_or_block|
-          if attr_name_or_block.is_a?(Proc)
-            # A block was given, call it to get the value.
-            value = instance_eval(&attr_name_or_block)
-          else
-            # Default behavior, call a method by the name of the attribute.
-            value = object.send(attr_name_or_block)
-          end
+          value = evaluate_attr_or_block(attr_name, attr_name_or_block)
           attributes[format_attribute_name(attr_name)] = value
         end
         attributes
@@ -78,16 +72,26 @@ module JSONAPI
       def links
         data = {}
         data.merge!({'self' => self_link}) if !self_link.nil?
-        return data if self.class.to_one_associations.nil?
+        build_to_one_data(data)
+        build_to_many_data(data)
+        data
+      end
 
+      def evaluate_attr_or_block(attr_name, attr_name_or_block)
+        if attr_name_or_block.is_a?(Proc)
+          # A custom block was given, call it to get the value.
+          instance_eval(&attr_name_or_block)
+        else
+          # Default behavior, call a method by the name of the attribute.
+          object.send(attr_name_or_block)
+        end
+      end
+      protected :evaluate_attr_or_block
+
+      def build_to_one_data(data)
+        return if self.class.to_one_associations.nil?
         self.class.to_one_associations.each do |attr_name, attr_name_or_block|
-          if attr_name_or_block.is_a?(Proc)
-            # A block was given, call it to get the related_object.
-            related_object = instance_eval(&attr_name_or_block)
-          else
-            # Default behavior, call a method by the name of the attribute.
-            related_object = object.send(attr_name_or_block)
-          end
+          related_object = evaluate_attr_or_block(attr_name, attr_name_or_block)
 
           formatted_attribute_name = format_attribute_name(attr_name)
           data[formatted_attribute_name] = {
@@ -109,8 +113,35 @@ module JSONAPI
             })
           end
         end
-        data
       end
+      protected :build_to_one_data
+
+      def build_to_many_data(data)
+        return if self.class.to_many_associations.nil?
+        self.class.to_many_associations.each do |attr_name, attr_name_or_block|
+          related_objects = evaluate_attr_or_block(attr_name, attr_name_or_block) || []
+
+          formatted_attribute_name = format_attribute_name(attr_name)
+          data[formatted_attribute_name] = {
+            'self' => relationship_self_link(attr_name),
+            'related' => relationship_related_link(attr_name),
+          }
+
+          # Spec: Resource linkage MUST be represented as one of the following:
+          # - an empty array ([]) for empty to-many relationships.
+          # - an array of linkage objects for non-empty to-many relationships.
+          # http://jsonapi.org/format/#document-structure-resource-relationships
+          data[formatted_attribute_name].merge!({'linkage' => []})
+          related_objects.each do |related_object|
+            related_object_serializer = find_serializer(related_object)
+            data[formatted_attribute_name]['linkage'] << {
+              'type' => related_object_serializer.type,
+              'id' => related_object_serializer.id.to_s,
+            }
+          end
+        end
+      end
+      protected :build_to_many_data
     end
 
     module ClassMethods
