@@ -86,7 +86,7 @@ module JSONAPI
       end
       protected :evaluate_attr_or_block
 
-      def build_to_one_data(data, includes_collector = [])
+      def build_to_one_data(data)
         return if self.class.to_one_associations.nil?
         self.class.to_one_associations.each do |attr_name, attr_name_or_block|
           related_object = evaluate_attr_or_block(attr_name, attr_name_or_block)
@@ -114,7 +114,7 @@ module JSONAPI
       end
       protected :build_to_one_data
 
-      def build_to_many_data(data, includes_collector = [])
+      def build_to_many_data(data)
         return if self.class.to_many_associations.nil?
         self.class.to_many_associations.each do |attr_name, attr_name_or_block|
           related_objects = evaluate_attr_or_block(attr_name, attr_name_or_block) || []
@@ -150,8 +150,8 @@ module JSONAPI
 
         # Duck-typing check for array, this should work if given an array or ActiveRecord Relation.
         is_multiple = objects.respond_to?('each')
-        primary_data = serialize_primary_data(objects) if !is_multiple
-        primary_data = serialize_primary_data_multi(objects) if is_multiple
+        primary_data = serialize_primary(objects) if !is_multiple
+        primary_data = serialize_primary_multi(objects) if is_multiple
         result = {
           'data' => primary_data,
         }
@@ -163,7 +163,7 @@ module JSONAPI
 
           # Starting with every primary root object, recursively search and find objects that match
           # the given include paths.
-          included_objects_set = SortedSet.new
+          included_objects_set = Set.new
           objects = is_multiple ? objects : [objects]
 
           objects.each do |obj|
@@ -185,13 +185,13 @@ module JSONAPI
 
       # ---
 
-      def serialize_primary_data_multi(objects)
+      def serialize_primary_multi(objects)
         return [] if !objects.any?
-        objects.map { |obj| serialize_primary_data(obj) }
+        objects.map { |obj| serialize_primary(obj) }
       end
-      protected :serialize_primary_data_multi
+      protected :serialize_primary_multi
 
-      def serialize_primary_data(object)
+      def serialize_primary(object)
         return if object.nil?
 
         serializer = self.new(object)
@@ -208,7 +208,7 @@ module JSONAPI
         data.merge!({'meta' => serializer.meta}) if !serializer.meta.nil?
         data
       end
-      protected :serialize_primary_data
+      protected :serialize_primary
 
       # Recursively find object relationships and add them to the result set.
       def find_recursive_relationships(root_object, parsed_relationship_map, result_set)
@@ -222,10 +222,12 @@ module JSONAPI
           # First, check if the attribute is a to-one association.
           attr_name_or_block = serializer.class.to_one_associations[unformatted_attr_name.to_sym]
           if attr_name_or_block
+            is_multiple = false
             # Note: intentional high-coupling to instance method.
             object = serializer.send(:evaluate_attr_or_block, attr_name, attr_name_or_block)
           else
             # If not, check if the attribute is a to-many association.
+            is_multiple = true
             attr_name_or_block = serializer.class.to_many_associations[unformatted_attr_name.to_sym]
             if attr_name_or_block
               # Note: intentional high-coupling to instance method.
@@ -236,7 +238,10 @@ module JSONAPI
 
           if value['_include'] == true
             # Include the current level objects if the attribute exists.
-            result_set << find_serializer_class(object).serialize_primary_data(object)
+            objects = is_multiple ? object : [object]
+            objects.each do |obj|
+              result_set << find_serializer_class(obj).serialize_primary(obj)
+            end
           end
 
           # Recurse deeper!

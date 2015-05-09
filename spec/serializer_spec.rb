@@ -1,14 +1,14 @@
 describe JSONAPI::Serializer do
-  describe 'internal-only serialize_primary_data' do
+  describe 'internal-only serialize_primary' do
     it 'serializes nil to nil' do
       # Spec: Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources
       # http://jsonapi.org/format/#document-structure-top-level
-      expect(MyApp::PostSerializer.send(:serialize_primary_data, nil)).to be_nil
+      expect(MyApp::PostSerializer.send(:serialize_primary, nil)).to be_nil
     end
     it 'can serialize a simple object' do
       post = create(:post)
-      expect(MyApp::SimplestPostSerializer.send(:serialize_primary_data, post)).to eq({
+      expect(MyApp::SimplestPostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -22,7 +22,7 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize a simple object with resource-level metadata' do
       post = create(:post)
-      expect(MyApp::PostSerializerWithMetadata.send(:serialize_primary_data, post)).to eq({
+      expect(MyApp::PostSerializerWithMetadata.send(:serialize_primary, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -42,7 +42,7 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize a null to-one relationship' do
       post = create(:post, author: nil)
-      expect(MyApp::PostSerializer.send(:serialize_primary_data, post)).to eq({
+      expect(MyApp::PostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -69,7 +69,7 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize a simple to-one relationship' do
       post = create(:post, :with_author)
-      expect(MyApp::PostSerializer.send(:serialize_primary_data, post)).to eq({
+      expect(MyApp::PostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -98,10 +98,9 @@ describe JSONAPI::Serializer do
       })
     end
     it 'can serialize an empty to-many relationship' do
-      comments = []
-      post = create(:post, comments: comments)
+      post = create(:post, comments: [])
 
-      expect(MyApp::PostSerializer.send(:serialize_primary_data, post)).to eq({
+      expect(MyApp::PostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -130,7 +129,7 @@ describe JSONAPI::Serializer do
       comments = create_list(:comment, 2)
       post = create(:post, comments: comments)
 
-      expect(MyApp::PostSerializer.send(:serialize_primary_data, post)).to eq({
+      expect(MyApp::PostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -174,27 +173,46 @@ describe JSONAPI::Serializer do
     end
     it 'correctly wraps primary data' do
       post = create(:post)
-      primary_data = MyApp::PostSerializer.send(:serialize_primary_data, post)
+      primary_data = MyApp::PostSerializer.send(:serialize_primary, post)
       expect(MyApp::PostSerializer.serialize(post)).to eq({
-        'data' => MyApp::PostSerializer.send(:serialize_primary_data, post),
+        'data' => MyApp::PostSerializer.send(:serialize_primary, post),
       })
     end
-    it 'handles include of nil to-one relationship' do
+    it 'handles include of nil to-one relationship in compound document' do
       post = create(:post)
-      primary_data = MyApp::PostSerializer.send(:serialize_primary_data, post)
+      primary_data = MyApp::PostSerializer.send(:serialize_primary, post)
 
       expect(MyApp::PostSerializer.serialize(post, include: ['author'])).to eq({
-        'data' => MyApp::PostSerializer.send(:serialize_primary_data, post),
+        'data' => MyApp::PostSerializer.send(:serialize_primary, post),
         'included' => [],
       })
     end
-    it 'handles include of simple to-one relationships' do
+    it 'handles include of simple to-one relationship in compound document' do
       post = create(:post, :with_author)
       expect(MyApp::PostSerializer.serialize(post, include: ['author'])).to eq({
-        'data' => MyApp::PostSerializer.send(:serialize_primary_data, post),
+        'data' => MyApp::PostSerializer.send(:serialize_primary, post),
         'included' => [
-          MyApp::UserSerializer.send(:serialize_primary_data, post.author),
+          MyApp::UserSerializer.send(:serialize_primary, post.author),
         ],
+      })
+    end
+    it 'handles include of empty to-many relationships in compound document' do
+      post = create(:post, :with_author, comments: [])
+      expected_includes = MyApp::CommentSerializer.send(:serialize_primary_multi, post.comments)
+
+      expect(MyApp::PostSerializer.serialize(post, include: ['comments'])).to eq({
+        'data' => MyApp::PostSerializer.send(:serialize_primary, post),
+        'included' => expected_includes,
+      })
+    end
+    it 'handles include of simple to-many relationships in compound document' do
+      comments = create_list(:comment, 2)
+      post = create(:post, :with_author, comments: comments)
+      expected_includes = MyApp::CommentSerializer.send(:serialize_primary_multi, post.comments)
+
+      expect(MyApp::PostSerializer.serialize(post, include: ['comments'])).to eq({
+        'data' => MyApp::PostSerializer.send(:serialize_primary, post),
+        'included' => expected_includes,
       })
     end
   end
