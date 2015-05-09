@@ -145,7 +145,20 @@ module JSONAPI
     end
 
     module ClassMethods
+      def serialize(objects)
+        # Duck-typing check for array, this should work if given an array or ActiveRecord Relation.
+        result = {
+          'data' => serialize_primary_data(objects),
+        }
+        is_multiple = objects.respond_to?('each')
+        objects = is_multiple ? objects : [objects]
+        result
+      end
+
       def serialize_primary_data(object)
+        return if object.nil?
+        return [] if object.respond_to?('each') && !object.any?
+
         serializer = self.new(object)
         data = {
           'id' => serializer.id.to_s,

@@ -1,5 +1,11 @@
 describe JSONAPI::Serializer do
   describe 'serialize_primary_data' do
+    it 'serializes nil to nil' do
+      # Spec: Primary data MUST be either:
+      # - a single resource object or null, for requests that target single resources
+      # http://jsonapi.org/format/#document-structure-top-level
+      expect(MyApp::PostSerializer.serialize_primary_data(nil)).to be_nil
+    end
     it 'can serialize a simple object' do
       post = create(:post)
       expect(MyApp::SimplePostSerializer.serialize_primary_data(post)).to eq({
@@ -137,6 +143,14 @@ describe JSONAPI::Serializer do
           },
         },
       })
+    end
+  end
+  describe 'serialize' do
+    it 'can serialize a nil object' do
+     expect(MyApp::PostSerializer.serialize(nil)).to eq({'data' => nil})
+    end
+    it 'can serialize an empty array' do
+     expect(MyApp::PostSerializer.serialize([])).to eq({'data' => []})
     end
   end
 end
