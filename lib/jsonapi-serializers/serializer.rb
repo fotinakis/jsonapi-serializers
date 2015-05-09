@@ -1,3 +1,4 @@
+require 'set'
 require 'active_support/inflector'
 
 module JSONAPI
@@ -33,6 +34,10 @@ module JSONAPI
         name.to_s.dasherize
       end
 
+      def unformat_attribute_name(name)
+        name.to_s.underscore
+      end
+
       def self_link
         "#{route_namespace}/#{type}/#{id}"
       end
@@ -51,14 +56,6 @@ module JSONAPI
 
       # Override this to provide a namespace like "/api/v1" for all generated links.
       def route_namespace
-      end
-
-      def find_serializer_class(object)
-        "#{object.class.name}Serializer".constantize
-      end
-
-      def find_serializer(object)
-        find_serializer_class(object).new(object)
       end
 
       def attributes
@@ -89,7 +86,7 @@ module JSONAPI
       end
       protected :evaluate_attr_or_block
 
-      def build_to_one_data(data)
+      def build_to_one_data(data, includes_collector = [])
         return if self.class.to_one_associations.nil?
         self.class.to_one_associations.each do |attr_name, attr_name_or_block|
           related_object = evaluate_attr_or_block(attr_name, attr_name_or_block)
@@ -105,7 +102,7 @@ module JSONAPI
             # http://jsonapi.org/format/#document-structure-resource-relationships
             data[formatted_attribute_name].merge!({'linkage' => nil})
           else
-            related_object_serializer = find_serializer(related_object)
+            related_object_serializer = self.class.find_serializer(related_object)
             data[formatted_attribute_name].merge!({
               'linkage' => {
                 'type' => related_object_serializer.type,
@@ -117,7 +114,7 @@ module JSONAPI
       end
       protected :build_to_one_data
 
-      def build_to_many_data(data)
+      def build_to_many_data(data, includes_collector = [])
         return if self.class.to_many_associations.nil?
         self.class.to_many_associations.each do |attr_name, attr_name_or_block|
           related_objects = evaluate_attr_or_block(attr_name, attr_name_or_block) || []
@@ -134,7 +131,7 @@ module JSONAPI
           # http://jsonapi.org/format/#document-structure-resource-relationships
           data[formatted_attribute_name].merge!({'linkage' => []})
           related_objects.each do |related_object|
-            related_object_serializer = find_serializer(related_object)
+            related_object_serializer = self.class.find_serializer(related_object)
             data[formatted_attribute_name]['linkage'] << {
               'type' => related_object_serializer.type,
               'id' => related_object_serializer.id.to_s,
@@ -147,7 +144,10 @@ module JSONAPI
 
     module ClassMethods
       # The main public method of all Serializer classes.
-      def serialize(objects)
+      def serialize(objects, options = {})
+        # Normalize include option.
+        options[:include] = options.delete('include') || options[:include]
+
         # Duck-typing check for array, this should work if given an array or ActiveRecord Relation.
         is_multiple = objects.respond_to?('each')
         primary_data = serialize_primary_data(objects) if !is_multiple
@@ -155,11 +155,38 @@ module JSONAPI
         result = {
           'data' => primary_data,
         }
+
+        # If 'include' relationships are given, recursively find and include each object once.
+        if options[:include]
+          # Parse the given relationship paths.
+          parsed_relationship_map = parse_relationship_paths(options[:include])
+
+          # Starting with every primary root object, recursively search and find objects that match
+          # the given include paths.
+          included_objects_set = SortedSet.new
+          objects = is_multiple ? objects : [objects]
+
+          objects.each do |obj|
+            find_recursive_relationships(obj, parsed_relationship_map, included_objects_set)
+          end
+          result['included'] = included_objects_set.to_a
+        end
+
         result
       end
 
+      def find_serializer_class(object)
+        "#{object.class.name}Serializer".constantize
+      end
+
+      def find_serializer(object)
+        find_serializer_class(object).new(object)
+      end
+
+      # ---
+
       def serialize_primary_data_multi(objects)
-        return [] if objects.respond_to?('each') && !objects.any?
+        return [] if !objects.any?
         objects.map { |obj| serialize_primary_data(obj) }
       end
       protected :serialize_primary_data_multi
@@ -182,6 +209,70 @@ module JSONAPI
         data
       end
       protected :serialize_primary_data
+
+      # Recursively find object relationships and add them to the result set.
+      def find_recursive_relationships(root_object, parsed_relationship_map, result_set)
+        parsed_relationship_map.each do |attr_name, value|
+          serializer = find_serializer(root_object)
+          unformatted_attr_name = serializer.unformat_attribute_name(attr_name)
+
+          # TODO: need to fail with a custom error if the given include attribute doesn't exist.
+          object = nil
+
+          # First, check if the attribute is a to-one association.
+          attr_name_or_block = serializer.class.to_one_associations[unformatted_attr_name.to_sym]
+          if attr_name_or_block
+            # Note: intentional high-coupling to instance method.
+            object = serializer.send(:evaluate_attr_or_block, attr_name, attr_name_or_block)
+          else
+            # If not, check if the attribute is a to-many association.
+            attr_name_or_block = serializer.class.to_many_associations[unformatted_attr_name.to_sym]
+            if attr_name_or_block
+              # Note: intentional high-coupling to instance method.
+              object = serializer.send(:evaluate_attr_or_block, attr_name, attr_name_or_block)
+            end
+          end
+          next if object.nil?
+
+          if value['_include'] == true
+            # Include the current level objects if the attribute exists.
+            result_set << find_serializer_class(object).serialize_primary_data(object)
+          end
+
+          # Recurse deeper!
+          # find_recursive_relationships()
+        end
+      end
+      protected :find_recursive_relationships
+
+      # Takes a list of relationship paths and returns a hash as deep as the given paths.
+      # The '_include' => true is a sentinal value that specifies whether the parent level should
+      # be included.
+      #
+      # Example:
+      #   Given: ['author', 'comments', 'comments.user']
+      #   Returns: {
+      #     'author' => {'_include' => true},
+      #     'comments' => {'_include' => true, 'user' => {'_include' => true}},
+      #   }
+      def parse_relationship_paths(paths)
+        relationships = {}
+        paths.each do |path|
+          path = path.to_s
+          if !path.include?('.')
+            # Base case.
+            relationships[path] ||= {}
+            relationships[path].merge!({'_include' => true})
+          else
+            # Recurisive case.
+            first_level, rest = path.split('.', 2)
+            relationships[first_level] ||= {}
+            relationships[first_level].merge!(parse_relationship_paths([rest]))
+          end
+        end
+        relationships
+      end
+      protected :parse_relationship_paths
     end
   end
 end

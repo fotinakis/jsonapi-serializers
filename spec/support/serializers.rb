@@ -10,6 +10,8 @@ module MyApp
   class Comment
     attr_accessor :id
     attr_accessor :body
+    attr_accessor :user
+    attr_accessor :post
   end
 
   class User

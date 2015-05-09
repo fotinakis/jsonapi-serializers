@@ -179,7 +179,49 @@ describe JSONAPI::Serializer do
         'data' => MyApp::PostSerializer.send(:serialize_primary_data, post),
       })
     end
-    xit 'correctly includes related resources if specified' do
+    it 'handles include of nil to-one relationship' do
+      post = create(:post)
+      primary_data = MyApp::PostSerializer.send(:serialize_primary_data, post)
+
+      expect(MyApp::PostSerializer.serialize(post, include: ['author'])).to eq({
+        'data' => MyApp::PostSerializer.send(:serialize_primary_data, post),
+        'included' => [],
+      })
+    end
+    it 'handles include of simple to-one relationships' do
+      post = create(:post, :with_author)
+      expect(MyApp::PostSerializer.serialize(post, include: ['author'])).to eq({
+        'data' => MyApp::PostSerializer.send(:serialize_primary_data, post),
+        'included' => [
+          MyApp::UserSerializer.send(:serialize_primary_data, post.author),
+        ],
+      })
+    end
+  end
+  describe 'internal-only parse_relationship_paths' do
+    it 'correctly handles empty arrays' do
+      result = MyApp::PostSerializer.send(:parse_relationship_paths, [])
+      expect(result).to eq({})
+    end
+    it 'correctly handles single-level relationship paths' do
+      result = MyApp::PostSerializer.send(:parse_relationship_paths, ['comments'])
+      expect(result).to eq({'comments' => {'_include' => true}})
+    end
+    it 'correctly handles multi-level relationship paths' do
+      result = MyApp::PostSerializer.send(:parse_relationship_paths, ['comments.user'])
+      expect(result).to eq({'comments' => {'user' => {'_include' => true}}})
+    end
+    it 'correctly handles multi-level relationship paths with same parent' do
+      result = MyApp::PostSerializer.send(:parse_relationship_paths, ['comments', 'comments.user'])
+      expect(result).to eq({'comments' => {'_include' => true, 'user' => {'_include' => true}}})
+    end
+    it 'correctly handles mixed single and multi-level relationship paths' do
+      paths = ['author', 'comments', 'comments.post.author']
+      result = MyApp::PostSerializer.send(:parse_relationship_paths, paths)
+      expect(result).to eq({
+        'author' => {'_include' => true},
+        'comments' => {'_include' => true, 'post' => {'author' => {'_include' => true}}},
+      })
     end
   end
 end
