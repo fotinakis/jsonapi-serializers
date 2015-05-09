@@ -1,8 +1,22 @@
 module MyApp
+  class Post
+    attr_accessor :id
+    attr_accessor :title
+  end
+
+  class Comment
+    attr_accessor :id
+    attr_accessor :body
+  end
+
+  class User
+    attr_accessor :id
+    attr_accessor :name
+  end
+
   class PostSerializer
     include JSONAPI::Serializer
 
-    attribute :id
     attribute :title
 
     # has_one :author, serializer: :user
@@ -13,7 +27,6 @@ module MyApp
   class CommentSerializer
     include JSONAPI::Serializer
 
-    attribute :id
     attribute :body
 
     # has_one :user
@@ -22,7 +35,6 @@ module MyApp
   class UserSerializer
     include JSONAPI::Serializer
 
-    attribute :id
     attribute :name
 
     # has_many :posts
