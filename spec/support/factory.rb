@@ -6,6 +6,10 @@ FactoryGirl.define do
     sequence(:id) {|n| n }
     sequence(:title) {|n| "Title for Post #{n}" }
     sequence(:body) {|n| "Body for Post #{n}" }
+
+    trait :with_author do
+      association :author, factory: :user
+    end
   end
 
   factory :comment, class: MyApp::Comment do

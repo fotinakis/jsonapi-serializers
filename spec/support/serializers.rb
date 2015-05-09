@@ -3,6 +3,7 @@ module MyApp
     attr_accessor :id
     attr_accessor :title
     attr_accessor :body
+    attr_accessor :author
   end
 
   class Comment
@@ -13,6 +14,19 @@ module MyApp
   class User
     attr_accessor :id
     attr_accessor :name
+  end
+
+  class SimplePostSerializer
+    include JSONAPI::Serializer
+
+    attribute :title
+    attribute :long_content do
+      object.body
+    end
+
+    def type
+      'posts'
+    end
   end
 
   class PostSerializer
