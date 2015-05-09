@@ -174,7 +174,7 @@ describe JSONAPI::Serializer do
     end
   end
 
-  describe 'serialize' do
+  describe 'serialize (class method)' do
     # The following tests rely on the fact that serialize_primary has been tested above, so object
     # primary data is not explicitly tested here. If things are broken, look above here first.
 
@@ -186,14 +186,12 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize a simple object' do
       post = create(:post)
-      primary_data = get_primary_data(post)
       expect(MyApp::PostSerializer.serialize(post)).to eq({
         'data' => get_primary_data(post),
       })
     end
     it 'handles include of nil to-one relationship in compound document' do
       post = create(:post)
-      primary_data = get_primary_data(post)
 
       expect(MyApp::PostSerializer.serialize(post, include: ['author'])).to eq({
         'data' => get_primary_data(post),
@@ -219,23 +217,28 @@ describe JSONAPI::Serializer do
     it 'handles include of simple to-many relationships in compound document' do
       comments = create_list(:comment, 2)
       post = create(:post, :with_author, comments: comments)
-      expected_includes = get_primary_data(post.comments)
 
       expect(MyApp::PostSerializer.serialize(post, include: ['comments'])).to eq({
         'data' => get_primary_data(post),
-        'included' => expected_includes,
+        'included' => get_primary_data(post.comments),
       })
     end
     it 'handles circular-referencing relationships in compound document' do
       comments = create_list(:comment, 2)
       post = create(:post, :with_author, comments: comments)
       comments.each { |c| c.post = post }
-      expected_includes = get_primary_data(post.comments)
-      expect(expected_includes.length).to eq(2)
 
       expect(MyApp::PostSerializer.serialize(post, include: ['comments'])).to eq({
         'data' => get_primary_data(post),
-        'included' => expected_includes,
+        'included' => get_primary_data(post.comments),
+      })
+    end
+  end
+  describe 'serialize (instance method)' do
+    it 'can serialize a simple object' do
+      post = create(:post)
+      expect(MyApp::PostSerializer.find_serializer(post).serialize).to eq({
+        'data' => get_primary_data(post),
       })
     end
   end

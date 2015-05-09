@@ -18,6 +18,10 @@ module JSONAPI
         @object = object
       end
 
+      def serialize(options = {})
+        self.class.serialize(object, options)
+      end
+
       # Override this method to customize how the ID is set.
       # Always return a string from this method to conform with the JSON:API spec.
       def id
@@ -185,13 +189,13 @@ module JSONAPI
 
       # ---
 
-      def serialize_primary_multi(objects)
+      def serialize_primary_multi(objects, options = {})
         return [] if !objects.any?
-        objects.map { |obj| serialize_primary(obj) }
+        objects.map { |obj| serialize_primary(obj, options) }
       end
       protected :serialize_primary_multi
 
-      def serialize_primary(object)
+      def serialize_primary(object, options = {})
         return if object.nil?
 
         serializer = self.new(object)

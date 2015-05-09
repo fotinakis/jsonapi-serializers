@@ -3,9 +3,8 @@ require "jsonapi-serializers/attributes"
 require "jsonapi-serializers/serializer"
 
 module JSONAPI
-  class Error < Exception; end
-  class DeclarationError < Error; end
-
   module Serializers
+    class Error < Exception; end
+    class DeclarationError < Error; end
   end
 end
