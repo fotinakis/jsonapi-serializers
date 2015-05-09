@@ -2,6 +2,7 @@ module MyApp
   class Post
     attr_accessor :id
     attr_accessor :title
+    attr_accessor :body
   end
 
   class Comment
@@ -18,8 +19,11 @@ module MyApp
     include JSONAPI::Serializer
 
     attribute :title
+    attribute :long_content do
+      object.body
+    end
 
-    # has_one :author, serializer: :user
+    has_one :author
     # has_many :comments
   end
 

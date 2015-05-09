@@ -7,11 +7,14 @@ describe JSONAPI::Serializer do
         'type' => 'posts',
         'attributes' => {
           'title' => 'Title for Post 1',
+          'long-content' => 'Body for Post 1',
         },
         'links' => {
           'self' => "/posts/1",
         },
       })
+    end
+    it 'can serialize a simple to-one relationship' do
     end
   end
 end

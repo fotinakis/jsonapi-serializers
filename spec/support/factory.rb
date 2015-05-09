@@ -5,6 +5,7 @@ FactoryGirl.define do
     skip_create
     sequence(:id) {|n| n }
     sequence(:title) {|n| "Title for Post #{n}" }
+    sequence(:body) {|n| "Body for Post #{n}" }
   end
 
   factory :comment, class: MyApp::Comment do

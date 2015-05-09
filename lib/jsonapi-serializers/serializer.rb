@@ -11,14 +11,14 @@ module JSONAPI
     end
 
     module InstanceMethods
-      attr_accessor :model
+      attr_accessor :object
 
-      def initialize(model)
-        @model = model
+      def initialize(object)
+        @object = object
       end
 
       def id
-        model.id
+        object.id
       end
 
       def type
@@ -27,10 +27,22 @@ module JSONAPI
 
       def attributes
         attributes = {}
-        self.class.serializable_attributes.each do |key, model_attr_name|
-          attributes[key] = model.send(model_attr_name)
+        self.class.attributes_map.each do |attr_name, attr_name_or_block|
+          if attr_name_or_block.is_a?(Proc)
+            # A block was given, call it to get the value.
+            value = instance_eval(&attr_name_or_block)
+          else
+            # Default behavior, call a method by the name of the attribute.
+            value = object.send(attr_name_or_block)
+          end
+          attributes[format_attribute_name(attr_name)] = value
         end
         attributes
+      end
+
+      # By JSON:API spec convention, attribute names are dasherized. Override this to customize.
+      def format_attribute_name(name)
+        name.to_s.dasherize
       end
 
       def links
@@ -40,10 +52,6 @@ module JSONAPI
       end
 
       def self_link
-        format_route(type, id)
-      end
-
-      def format_route(type, id)
         "#{route_namespace}/#{type}/#{id}"
       end
 
@@ -56,8 +64,8 @@ module JSONAPI
     end
 
     module ClassMethods
-      def serialize_primary_data(model)
-        serializer = self.new(model)
+      def serialize_primary_data(object)
+        serializer = self.new(object)
         data = {
           'id' => serializer.id,
           'type' => serializer.type,
