@@ -223,6 +223,18 @@ describe JSONAPI::Serializer do
         'included' => expected_includes,
       })
     end
+    it 'handles circular-referencing relationships in compound document' do
+      comments = create_list(:comment, 2)
+      post = create(:post, :with_author, comments: comments)
+      comments.each { |c| c.post = post }
+      expected_includes = get_primary_data(post.comments)
+      expect(expected_includes.length).to eq(2)
+
+      expect(MyApp::PostSerializer.serialize(post, include: ['comments'])).to eq({
+        'data' => get_primary_data(post),
+        'included' => expected_includes,
+      })
+    end
   end
   describe 'internal-only parse_relationship_paths' do
     it 'correctly handles empty arrays' do
