@@ -59,9 +59,9 @@ describe JSONAPI::Serializer do
             # http://jsonapi.org/format/#document-structure-resource-relationships
             'linkage' => nil,
           },
-          'comments' => {
-            'self' => '/posts/1/links/comments',
-            'related' => '/posts/1/comments',
+          'long-comments' => {
+            'self' => '/posts/1/links/long-comments',
+            'related' => '/posts/1/long-comments',
             'linkage' => [],
           },
         },
@@ -89,16 +89,16 @@ describe JSONAPI::Serializer do
               'id' => '1',
             },
           },
-          'comments' => {
-            'self' => '/posts/1/links/comments',
-            'related' => '/posts/1/comments',
+          'long-comments' => {
+            'self' => '/posts/1/links/long-comments',
+            'related' => '/posts/1/long-comments',
             'linkage' => [],
           },
         },
       })
     end
     it 'can serialize primary data for an empty to-many relationship' do
-      post = create(:post, comments: [])
+      post = create(:post, long_comments: [])
 
       expect(MyApp::PostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
@@ -114,9 +114,9 @@ describe JSONAPI::Serializer do
             'related' => '/posts/1/author',
             'linkage' => nil,
           },
-          'comments' => {
-            'self' => '/posts/1/links/comments',
-            'related' => '/posts/1/comments',
+          'long-comments' => {
+            'self' => '/posts/1/links/long-comments',
+            'related' => '/posts/1/long-comments',
             # Spec: Resource linkage MUST be represented as one of the following:
             # - an empty array ([]) for empty to-many relationships.
             # http://jsonapi.org/format/#document-structure-resource-relationships
@@ -126,8 +126,8 @@ describe JSONAPI::Serializer do
       })
     end
     it 'can serialize primary data for a simple to-many relationship' do
-      comments = create_list(:comment, 2)
-      post = create(:post, comments: comments)
+      long_comments = create_list(:long_comment, 2)
+      post = create(:post, long_comments: long_comments)
 
       expect(MyApp::PostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
@@ -143,22 +143,48 @@ describe JSONAPI::Serializer do
             'related' => '/posts/1/author',
             'linkage' => nil,
           },
-          'comments' => {
-            'self' => '/posts/1/links/comments',
-            'related' => '/posts/1/comments',
+          'long-comments' => {
+            'self' => '/posts/1/links/long-comments',
+            'related' => '/posts/1/long-comments',
             # Spec: Resource linkage MUST be represented as one of the following:
             # - an array of linkage objects for non-empty to-many relationships.
             # http://jsonapi.org/format/#document-structure-resource-relationships
             'linkage' => [
               {
-                'type' => 'comments',
+                'type' => 'long-comments',
                 'id' => '1',
               },
               {
-                'type' => 'comments',
+                'type' => 'long-comments',
                 'id' => '2',
               },
             ],
+          },
+        },
+      })
+    end
+    it 'can serialize primary data for a simple object with a long name' do
+      long_comment = create(:long_comment, post: create(:post))
+      expect(MyApp::LongCommentSerializer.send(:serialize_primary, long_comment)).to eq({
+        'id' => '1',
+        'type' => 'long-comments',
+        'attributes' => {
+          'body' => 'Body for LongComment 1',
+        },
+        'links' => {
+          'self' => '/long-comments/1',
+          'user' => {
+            'self' => '/long-comments/1/links/user',
+            'related' => '/long-comments/1/user',
+            'linkage' => nil,
+          },
+          'post' => {
+            'self' => '/long-comments/1/links/post',
+            'related' => '/long-comments/1/post',
+            'linkage' => {
+              'type' => 'posts',
+              'id' => '1',
+            },
           },
         },
       })
@@ -174,7 +200,7 @@ describe JSONAPI::Serializer do
     end
   end
 
-  describe 'serialize (class method)' do
+  describe 'serialize' do
     # The following tests rely on the fact that serialize_primary has been tested above, so object
     # primary data is not explicitly tested here. If things are broken, look above here first.
 
@@ -208,37 +234,29 @@ describe JSONAPI::Serializer do
       })
     end
     it 'handles include of empty to-many relationships in compound document' do
-      post = create(:post, :with_author, comments: [])
-      expect(MyApp::PostSerializer.serialize(post, include: ['comments'])).to eq({
+      post = create(:post, :with_author, long_comments: [])
+      expect(MyApp::PostSerializer.serialize(post, include: ['long-comments'])).to eq({
         'data' => get_primary_data(post),
         'included' => [],
       })
     end
     it 'handles include of simple to-many relationships in compound document' do
-      comments = create_list(:comment, 2)
-      post = create(:post, :with_author, comments: comments)
+      long_comments = create_list(:long_comment, 2)
+      post = create(:post, :with_author, long_comments: long_comments)
 
-      expect(MyApp::PostSerializer.serialize(post, include: ['comments'])).to eq({
+      expect(MyApp::PostSerializer.serialize(post, include: ['long-comments'])).to eq({
         'data' => get_primary_data(post),
-        'included' => get_primary_data(post.comments),
+        'included' => get_primary_data(post.long_comments),
       })
     end
     it 'handles circular-referencing relationships in compound document' do
-      comments = create_list(:comment, 2)
-      post = create(:post, :with_author, comments: comments)
-      comments.each { |c| c.post = post }
+      long_comments = create_list(:long_comment, 2)
+      post = create(:post, :with_author, long_comments: long_comments)
+      long_comments.each { |c| c.post = post }
 
-      expect(MyApp::PostSerializer.serialize(post, include: ['comments'])).to eq({
+      expect(MyApp::PostSerializer.serialize(post, include: ['long-comments'])).to eq({
         'data' => get_primary_data(post),
-        'included' => get_primary_data(post.comments),
-      })
-    end
-  end
-  describe 'serialize (instance method)' do
-    it 'can serialize a simple object' do
-      post = create(:post)
-      expect(MyApp::PostSerializer.find_serializer(post).serialize).to eq({
-        'data' => get_primary_data(post),
+        'included' => get_primary_data(post.long_comments),
       })
     end
   end
@@ -248,23 +266,30 @@ describe JSONAPI::Serializer do
       expect(result).to eq({})
     end
     it 'correctly handles single-level relationship paths' do
-      result = MyApp::PostSerializer.send(:parse_relationship_paths, ['comments'])
-      expect(result).to eq({'comments' => {'_include' => true}})
+      result = MyApp::PostSerializer.send(:parse_relationship_paths, ['long-comments'])
+      expect(result).to eq({
+        'long-comments' => {'_include' => true}
+      })
     end
     it 'correctly handles multi-level relationship paths' do
-      result = MyApp::PostSerializer.send(:parse_relationship_paths, ['comments.user'])
-      expect(result).to eq({'comments' => {'user' => {'_include' => true}}})
+      result = MyApp::PostSerializer.send(:parse_relationship_paths, ['long-comments.user'])
+      expect(result).to eq({
+        'long-comments' => {'user' => {'_include' => true}}
+      })
     end
     it 'correctly handles multi-level relationship paths with same parent' do
-      result = MyApp::PostSerializer.send(:parse_relationship_paths, ['comments', 'comments.user'])
-      expect(result).to eq({'comments' => {'_include' => true, 'user' => {'_include' => true}}})
+      paths = ['long-comments', 'long-comments.user']
+      result = MyApp::PostSerializer.send(:parse_relationship_paths, paths)
+      expect(result).to eq({
+        'long-comments' => {'_include' => true, 'user' => {'_include' => true}}
+      })
     end
     it 'correctly handles mixed single and multi-level relationship paths' do
-      paths = ['author', 'comments', 'comments.post.author']
+      paths = ['author', 'long-comments', 'long-comments.post.author']
       result = MyApp::PostSerializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
         'author' => {'_include' => true},
-        'comments' => {'_include' => true, 'post' => {'author' => {'_include' => true}}},
+        'long-comments' => {'_include' => true, 'post' => {'author' => {'_include' => true}}},
       })
     end
   end

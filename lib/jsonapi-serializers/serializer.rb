@@ -18,10 +18,6 @@ module JSONAPI
         @object = object
       end
 
-      def serialize(options = {})
-        self.class.serialize(object, options)
-      end
-
       # Override this method to customize how the ID is set.
       # Always return a string from this method to conform with the JSON:API spec.
       def id
@@ -30,15 +26,15 @@ module JSONAPI
 
       # Override this method to customize the type name.
       def type
-        self.class.name.demodulize.sub('Serializer', '').downcase.pluralize
+        object.class.name.demodulize.tableize.dasherize
       end
 
       # By JSON:API spec convention, attribute names are dasherized. Override this to customize.
-      def format_attribute_name(name)
+      def format_name(name)
         name.to_s.dasherize
       end
 
-      def unformat_attribute_name(name)
+      def unformat_name(name)
         name.to_s.underscore
       end
 
@@ -47,11 +43,11 @@ module JSONAPI
       end
 
       def relationship_self_link(name)
-        "#{self_link}/links/#{name}"
+        "#{self_link}/links/#{format_name(name)}"
       end
 
       def relationship_related_link(name)
-        "#{self_link}/#{name}"
+        "#{self_link}/#{format_name(name)}"
       end
 
       # Override to provide resource-object-level meta data.
@@ -66,7 +62,7 @@ module JSONAPI
         attributes = {}
         self.class.attributes_map.each do |attr_name, attr_name_or_block|
           value = evaluate_attr_or_block(attr_name, attr_name_or_block)
-          attributes[format_attribute_name(attr_name)] = value
+          attributes[format_name(attr_name)] = value
         end
         attributes
       end
@@ -95,7 +91,7 @@ module JSONAPI
         self.class.to_one_associations.each do |attr_name, attr_name_or_block|
           related_object = evaluate_attr_or_block(attr_name, attr_name_or_block)
 
-          formatted_attribute_name = format_attribute_name(attr_name)
+          formatted_attribute_name = format_name(attr_name)
           data[formatted_attribute_name] = {
             'self' => relationship_self_link(attr_name),
             'related' => relationship_related_link(attr_name),
@@ -123,7 +119,7 @@ module JSONAPI
         self.class.to_many_associations.each do |attr_name, attr_name_or_block|
           related_objects = evaluate_attr_or_block(attr_name, attr_name_or_block) || []
 
-          formatted_attribute_name = format_attribute_name(attr_name)
+          formatted_attribute_name = format_name(attr_name)
           data[formatted_attribute_name] = {
             'self' => relationship_self_link(attr_name),
             'related' => relationship_related_link(attr_name),
@@ -219,7 +215,7 @@ module JSONAPI
         result_set = Set.new
         parsed_relationship_map.each do |attr_name, value|
           serializer = find_serializer(root_object)
-          unformatted_attr_name = serializer.unformat_attribute_name(attr_name)
+          unformatted_attr_name = serializer.unformat_name(attr_name)
 
           # TODO: need to fail with a custom error if the given include attribute doesn't exist.
           object = nil

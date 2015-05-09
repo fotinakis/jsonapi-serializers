@@ -12,10 +12,10 @@ FactoryGirl.define do
     end
   end
 
-  factory :comment, class: MyApp::Comment do
+  factory :long_comment, class: MyApp::LongComment do
     skip_create
     sequence(:id) {|n| n }
-    sequence(:body) {|n| "Body for Comment #{n}" }
+    sequence(:body) {|n| "Body for LongComment #{n}" }
   end
 
   factory :user, class: MyApp::User do

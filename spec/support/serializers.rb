@@ -4,10 +4,10 @@ module MyApp
     attr_accessor :title
     attr_accessor :body
     attr_accessor :author
-    attr_accessor :comments
+    attr_accessor :long_comments
   end
 
-  class Comment
+  class LongComment
     attr_accessor :id
     attr_accessor :body
     attr_accessor :user
@@ -28,7 +28,7 @@ module MyApp
     end
 
     has_one :author
-    has_many :comments
+    has_many :long_comments
   end
 
   class SimplestPostSerializer
@@ -64,7 +64,7 @@ module MyApp
     end
   end
 
-  class CommentSerializer
+  class LongCommentSerializer
     include JSONAPI::Serializer
 
     attribute :body
