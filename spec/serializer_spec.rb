@@ -4,11 +4,11 @@ describe JSONAPI::Serializer do
       # Spec: Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources
       # http://jsonapi.org/format/#document-structure-top-level
-      expect(MyApp::PostSerializer.serialize_primary_data(nil)).to be_nil
+      expect(MyApp::PostSerializer.send(:serialize_primary_data, nil)).to be_nil
     end
     it 'can serialize a simple object' do
       post = create(:post)
-      expect(MyApp::SimplePostSerializer.serialize_primary_data(post)).to eq({
+      expect(MyApp::SimplePostSerializer.send(:serialize_primary_data, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -22,7 +22,7 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize a null to-one relationship' do
       post = create(:post, author: nil)
-      expect(MyApp::PostSerializer.serialize_primary_data(post)).to eq({
+      expect(MyApp::PostSerializer.send(:serialize_primary_data, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -49,7 +49,7 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize a simple to-one relationship' do
       post = create(:post, :with_author)
-      expect(MyApp::PostSerializer.serialize_primary_data(post)).to eq({
+      expect(MyApp::PostSerializer.send(:serialize_primary_data, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -81,7 +81,7 @@ describe JSONAPI::Serializer do
       comments = []
       post = create(:post, comments: comments)
 
-      expect(MyApp::PostSerializer.serialize_primary_data(post)).to eq({
+      expect(MyApp::PostSerializer.send(:serialize_primary_data, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {
@@ -110,7 +110,7 @@ describe JSONAPI::Serializer do
       comments = create_list(:comment, 2)
       post = create(:post, comments: comments)
 
-      expect(MyApp::PostSerializer.serialize_primary_data(post)).to eq({
+      expect(MyApp::PostSerializer.send(:serialize_primary_data, post)).to eq({
         'id' => '1',
         'type' => 'posts',
         'attributes' => {

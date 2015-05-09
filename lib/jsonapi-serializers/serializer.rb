@@ -145,19 +145,26 @@ module JSONAPI
     end
 
     module ClassMethods
+      # The main public method of all Serializer classes.
       def serialize(objects)
         # Duck-typing check for array, this should work if given an array or ActiveRecord Relation.
-        result = {
-          'data' => serialize_primary_data(objects),
-        }
         is_multiple = objects.respond_to?('each')
-        objects = is_multiple ? objects : [objects]
+        primary_data = serialize_primary_data(objects) if !is_multiple
+        primary_data = serialize_primary_data_multi(objects) if is_multiple
+        result = {
+          'data' => primary_data,
+        }
         result
       end
 
+      def serialize_primary_data_multi(objects)
+        return [] if objects.respond_to?('each') && !objects.any?
+        objects.map { |obj| serialize_primary_data(obj) }
+      end
+      protected :serialize_primary_data_multi
+
       def serialize_primary_data(object)
         return if object.nil?
-        return [] if object.respond_to?('each') && !object.any?
 
         serializer = self.new(object)
         data = {
@@ -173,6 +180,7 @@ module JSONAPI
         data.merge!({'meta' => serializer.meta}) if !serializer.meta.nil?
         data
       end
+      protected :serialize_primary_data
     end
   end
 end

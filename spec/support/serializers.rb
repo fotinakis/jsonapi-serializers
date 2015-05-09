@@ -46,16 +46,15 @@ module MyApp
     include JSONAPI::Serializer
 
     attribute :body
+    has_one :user
 
-    # has_one :user
+    # Circular-reference back to post.
+    has_one :post
   end
 
   class UserSerializer
     include JSONAPI::Serializer
 
     attribute :name
-
-    # has_many :posts
-    # has_many :comments
   end
 end
