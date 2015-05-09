@@ -6,7 +6,7 @@ describe JSONAPI::Serializer do
       # http://jsonapi.org/format/#document-structure-top-level
       expect(MyApp::PostSerializer.send(:serialize_primary, nil)).to be_nil
     end
-    it 'can serialize a simple object' do
+    it 'can serialize primary data for a simple object' do
       post = create(:post)
       expect(MyApp::SimplestPostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
@@ -20,7 +20,7 @@ describe JSONAPI::Serializer do
         },
       })
     end
-    it 'can serialize a simple object with resource-level metadata' do
+    it 'can serialize primary data for a simple object with resource-level metadata' do
       post = create(:post)
       expect(MyApp::PostSerializerWithMetadata.send(:serialize_primary, post)).to eq({
         'id' => '1',
@@ -40,7 +40,7 @@ describe JSONAPI::Serializer do
         },
       })
     end
-    it 'can serialize a null to-one relationship' do
+    it 'can serialize primary data for a null to-one relationship' do
       post = create(:post, author: nil)
       expect(MyApp::PostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
@@ -67,7 +67,7 @@ describe JSONAPI::Serializer do
         },
       })
     end
-    it 'can serialize a simple to-one relationship' do
+    it 'can serialize primary data for a simple to-one relationship' do
       post = create(:post, :with_author)
       expect(MyApp::PostSerializer.send(:serialize_primary, post)).to eq({
         'id' => '1',
@@ -97,7 +97,7 @@ describe JSONAPI::Serializer do
         },
       })
     end
-    it 'can serialize an empty to-many relationship' do
+    it 'can serialize primary data for an empty to-many relationship' do
       post = create(:post, comments: [])
 
       expect(MyApp::PostSerializer.send(:serialize_primary, post)).to eq({
@@ -125,7 +125,7 @@ describe JSONAPI::Serializer do
         },
       })
     end
-    it 'can serialize a simple to-many relationship' do
+    it 'can serialize primary data for a simple to-many relationship' do
       comments = create_list(:comment, 2)
       post = create(:post, comments: comments)
 
@@ -175,13 +175,16 @@ describe JSONAPI::Serializer do
   end
 
   describe 'serialize' do
+    # The following tests rely on the fact that serialize_primary has been tested above, so object
+    # primary data is not explicitly tested here. If things are broken, look above here first.
+
     it 'can serialize a nil object' do
      expect(MyApp::PostSerializer.serialize(nil)).to eq({'data' => nil})
     end
     it 'can serialize an empty array' do
      expect(MyApp::PostSerializer.serialize([])).to eq({'data' => []})
     end
-    it 'correctly wraps primary data' do
+    it 'can serialize a simple object' do
       post = create(:post)
       primary_data = get_primary_data(post)
       expect(MyApp::PostSerializer.serialize(post)).to eq({

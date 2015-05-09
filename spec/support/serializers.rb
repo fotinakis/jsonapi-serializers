@@ -53,15 +53,13 @@ module MyApp
     end
 
     def type
-      'posts'
+      :posts
     end
 
     def meta
       {
         'copyright' => 'Copyright 2015 Example Corp.',
-        'authors' => [
-          'Aliens'
-        ]
+        'authors' => ['Aliens'],
       }
     end
   end

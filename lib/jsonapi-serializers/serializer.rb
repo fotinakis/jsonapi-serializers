@@ -105,7 +105,7 @@ module JSONAPI
             related_object_serializer = self.class.find_serializer(related_object)
             data[formatted_attribute_name].merge!({
               'linkage' => {
-                'type' => related_object_serializer.type,
+                'type' => related_object_serializer.type.to_s,
                 'id' => related_object_serializer.id.to_s,
               },
             })
@@ -133,7 +133,7 @@ module JSONAPI
           related_objects.each do |related_object|
             related_object_serializer = self.class.find_serializer(related_object)
             data[formatted_attribute_name]['linkage'] << {
-              'type' => related_object_serializer.type,
+              'type' => related_object_serializer.type.to_s,
               'id' => related_object_serializer.id.to_s,
             }
           end
@@ -197,7 +197,7 @@ module JSONAPI
         serializer = self.new(object)
         data = {
           'id' => serializer.id.to_s,
-          'type' => serializer.type,
+          'type' => serializer.type.to_s,
           'attributes' => serializer.attributes,
         }
 
