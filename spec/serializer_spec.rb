@@ -302,7 +302,10 @@ describe JSONAPI::Serializer do
         ],
       })
     end
+    xit 'handles recursive loading of relationships' do
+    end
   end
+
   describe 'serialize (class method)' do
     it 'delegates to module method but overrides serializer' do
       post = create(:post)
@@ -311,6 +314,7 @@ describe JSONAPI::Serializer do
       })
     end
   end
+
   describe 'internal-only parse_relationship_paths' do
     it 'correctly handles empty arrays' do
       result = JSONAPI::Serializer.send(:parse_relationship_paths, [])
@@ -350,6 +354,21 @@ describe JSONAPI::Serializer do
         'author' => {'_include' => true},
         'long-comments' => {'_include' => true, 'post' => {'author' => {'_include' => true}}},
       })
+    end
+
+    xdescribe 'context' do
+      it 'can be used to customize links' do
+        post = create(:post)
+        options = {
+          serializer: MyApp::PostSerializerWithContextHandling,
+          context: {
+            customized_path_prefix: '/api/v1/',
+          }
+        }
+        expect(JSONAPI::Serializer.serialize(post, options)).to eq({
+          'data' => get_primary_data(post, MyApp::PostSerializer),
+        })
+      end
     end
   end
 end

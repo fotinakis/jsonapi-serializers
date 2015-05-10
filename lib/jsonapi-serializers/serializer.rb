@@ -13,16 +13,21 @@ module JSONAPI
 
     module ClassMethods
       def serialize(object, options = {})
+        # Since this is being called on the class directly and not the module, override the
+        # serializer option to be the current class.
         options[:serializer] = self
+
         JSONAPI::Serializer.serialize(object, options)
       end
     end
 
     module InstanceMethods
       attr_accessor :object
+      attr_accessor :context
 
-      def initialize(object)
+      def initialize(object, options = {})
         @object = object
+        @context = options[:context] || {}
       end
 
       # Override this method to customize how the ID is set.
@@ -37,37 +42,33 @@ module JSONAPI
       end
 
       # By JSON:API spec convention, attribute names are dasherized. Override this to customize.
-      def format_name(name)
-        name.to_s.dasherize
+      def format_name(attribute_name)
+        attribute_name.to_s.dasherize
       end
 
-      def unformat_name(name)
-        name.to_s.underscore
+      def unformat_name(attribute_name)
+        attribute_name.to_s.underscore
       end
 
       def self_link
-        "#{route_namespace}/#{type}/#{id}"
+        "/#{type}/#{id}"
       end
 
-      def relationship_self_link(name)
-        "#{self_link}/links/#{format_name(name)}"
+      def relationship_self_link(attribute_name)
+        "#{self_link}/links/#{format_name(attribute_name)}"
       end
 
-      def relationship_related_link(name)
-        "#{self_link}/#{format_name(name)}"
+      def relationship_related_link(attribute_name)
+        "#{self_link}/#{format_name(attribute_name)}"
       end
 
       # Override to provide resource-object-level meta data.
       def meta
       end
 
-      # Override this to provide a namespace like "/api/v1" for all generated links.
-      def route_namespace
-      end
-
       def links
         data = {}
-        data.merge!({'self' => self_link}) if !self_link.nil?
+        data.merge!({'self' => self_link}) if self_link
         build_to_one_data(data)
         build_to_many_data(data)
         data
@@ -75,14 +76,14 @@ module JSONAPI
 
       def attributes
         attributes = {}
-        self.class.attributes_map.each do |attr_name, attr_name_or_block|
-          value = evaluate_attr_or_block(attr_name, attr_name_or_block)
-          attributes[format_name(attr_name)] = value
+        self.class.attributes_map.each do |attribute_name, attr_name_or_block|
+          value = evaluate_attr_or_block(attribute_name, attr_name_or_block)
+          attributes[format_name(attribute_name)] = value
         end
         attributes
       end
 
-      def evaluate_attr_or_block(attr_name, attr_name_or_block)
+      def evaluate_attr_or_block(attribute_name, attr_name_or_block)
         if attr_name_or_block.is_a?(Proc)
           # A custom block was given, call it to get the value.
           instance_eval(&attr_name_or_block)
@@ -95,13 +96,13 @@ module JSONAPI
 
       def build_to_one_data(data)
         return if self.class.to_one_associations.nil?
-        self.class.to_one_associations.each do |attr_name, attr_name_or_block|
-          related_object = evaluate_attr_or_block(attr_name, attr_name_or_block)
+        self.class.to_one_associations.each do |attribute_name, attr_name_or_block|
+          related_object = evaluate_attr_or_block(attribute_name, attr_name_or_block)
 
-          formatted_attribute_name = format_name(attr_name)
+          formatted_attribute_name = format_name(attribute_name)
           data[formatted_attribute_name] = {
-            'self' => relationship_self_link(attr_name),
-            'related' => relationship_related_link(attr_name),
+            'self' => relationship_self_link(attribute_name),
+            'related' => relationship_related_link(attribute_name),
           }
           if related_object.nil?
             # Spec: Resource linkage MUST be represented as one of the following:
@@ -123,13 +124,13 @@ module JSONAPI
 
       def build_to_many_data(data)
         return if self.class.to_many_associations.nil?
-        self.class.to_many_associations.each do |attr_name, attr_name_or_block|
-          related_objects = evaluate_attr_or_block(attr_name, attr_name_or_block) || []
+        self.class.to_many_associations.each do |attribute_name, attr_name_or_block|
+          related_objects = evaluate_attr_or_block(attribute_name, attr_name_or_block) || []
 
-          formatted_attribute_name = format_name(attr_name)
+          formatted_attribute_name = format_name(attribute_name)
           data[formatted_attribute_name] = {
-            'self' => relationship_self_link(attr_name),
-            'related' => relationship_related_link(attr_name),
+            'self' => relationship_self_link(attribute_name),
+            'related' => relationship_related_link(attribute_name),
           }
 
           # Spec: Resource linkage MUST be represented as one of the following:
@@ -149,12 +150,12 @@ module JSONAPI
       protected :build_to_many_data
     end
 
-    def self.serializer_class_name_for(object)
+    def self.find_serializer_class_name(object)
       "#{object.class.name}Serializer"
     end
 
     def self.find_serializer_class(object)
-      class_name = serializer_class_name_for(object)
+      class_name = find_serializer_class_name(object)
       class_name.constantize
     end
 
@@ -181,11 +182,14 @@ module JSONAPI
         serializer_class = options[:serializer] || find_serializer_class(objects.first)
         primary_data = serialize_primary_multi(objects, serializer_class)
       else
-        # Have single object.
+        # Duck-typing check for a collection being passed without is_collection true.
+        # We always must be told if serializing a collection because the JSON:API spec distinguishes
+        # how to serialize null single resources vs. empty collections.
         if objects.respond_to?(:each)
           raise JSONAPI::Serializers::AmbiguousCollectionError.new(
             'Must provide `is_collection: true` to `serialize` when serializing collections.')
         end
+        # Have single object.
         serializer_class = options[:serializer] || find_serializer_class(objects)
         primary_data = serialize_primary(objects, serializer_class)
       end
@@ -214,23 +218,23 @@ module JSONAPI
 
     # ---
 
-    def self.serialize_primary_multi(objects, serializer_class)
+    def self.serialize_primary_multi(objects, serializer_class, options = {})
       # Primary data MUST be either:
       # - an array of resource objects or an empty array ([]), for resource collections.
       # http://jsonapi.org/format/#document-structure-top-level
       return [] if !objects.any?
 
-      objects.map { |obj| serialize_primary(obj, serializer_class) }
+      objects.map { |obj| serialize_primary(obj, serializer_class, options) }
     end
     class << self; protected :serialize_primary_multi; end
 
-    def self.serialize_primary(object, serializer_class)
+    def self.serialize_primary(object, serializer_class, options = {})
       # Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources.
       # http://jsonapi.org/format/#document-structure-top-level
       return if object.nil?
 
-      serializer = serializer_class.new(object)
+      serializer = serializer_class.new(object, context: options[:context])
       data = {
         'id' => serializer.id.to_s,
         'type' => serializer.type.to_s,
@@ -249,9 +253,9 @@ module JSONAPI
     # Recursively find object relationships and add them to the result set.
     def self.find_recursive_relationships(root_object, parsed_relationship_map, result_set = nil)
       result_set = Set.new
-      parsed_relationship_map.each do |attr_name, value|
+      parsed_relationship_map.each do |attribute_name, value|
         serializer = JSONAPI::Serializer.find_serializer(root_object)
-        unformatted_attr_name = serializer.unformat_name(attr_name)
+        unformatted_attr_name = serializer.unformat_name(attribute_name)
 
         # TODO: need to fail with a custom error if the given include attribute doesn't exist.
         object = nil
@@ -261,14 +265,14 @@ module JSONAPI
         if attr_name_or_block
           is_to_many = false
           # Note: intentional high-coupling to instance method.
-          object = serializer.send(:evaluate_attr_or_block, attr_name, attr_name_or_block)
+          object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_name_or_block)
         else
           # If not, check if the attribute is a to-many association.
           is_to_many = true
           attr_name_or_block = serializer.class.to_many_associations[unformatted_attr_name.to_sym]
           if attr_name_or_block
             # Note: intentional high-coupling to instance method.
-            object = serializer.send(:evaluate_attr_or_block, attr_name, attr_name_or_block)
+            object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_name_or_block)
           end
         end
         next if object.nil?

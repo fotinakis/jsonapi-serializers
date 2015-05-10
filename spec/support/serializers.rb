@@ -31,39 +31,6 @@ module MyApp
     has_many :long_comments
   end
 
-  class SimplestPostSerializer
-    include JSONAPI::Serializer
-
-    attribute :title
-    attribute :long_content do
-      object.body
-    end
-
-    def type
-      'posts'
-    end
-  end
-
-  class PostSerializerWithMetadata
-    include JSONAPI::Serializer
-
-    attribute :title
-    attribute :long_content do
-      object.body
-    end
-
-    def type
-      :posts
-    end
-
-    def meta
-      {
-        'copyright' => 'Copyright 2015 Example Corp.',
-        'authors' => ['Aliens'],
-      }
-    end
-  end
-
   class LongCommentSerializer
     include JSONAPI::Serializer
 
@@ -78,5 +45,50 @@ module MyApp
     include JSONAPI::Serializer
 
     attribute :name
+  end
+
+  # More customized, one-off serializers to test particular behaviors:
+
+  class SimplestPostSerializer
+    include JSONAPI::Serializer
+
+    attribute :title
+    attribute :long_content do
+      object.body
+    end
+
+    def type
+      :posts
+    end
+  end
+
+  class PostSerializerWithMetadata
+    include JSONAPI::Serializer
+
+    attribute :title
+    attribute :long_content do
+      object.body
+    end
+
+    def type
+      'posts'  # Intentionally test string type.
+    end
+
+    def meta
+      {
+        'copyright' => 'Copyright 2015 Example Corp.',
+        'authors' => ['Aliens'],
+      }
+    end
+  end
+
+  class PostSerializerWithContextHandling < SimplestPostSerializer
+    include JSONAPI::Serializer
+
+    attribute :body, if: :show_body?
+
+    def show_body?
+      context.fetch(:show_body, true)
+    end
   end
 end
