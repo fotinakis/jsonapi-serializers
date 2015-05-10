@@ -85,10 +85,14 @@ module MyApp
   class PostSerializerWithContextHandling < SimplestPostSerializer
     include JSONAPI::Serializer
 
-    attribute :body, if: :show_body?
+    attribute :body, if: :show_body?, unless: :hide_body?
 
     def show_body?
       context.fetch(:show_body, true)
+    end
+
+    def hide_body?
+      context.fetch(:hide_body, false)
     end
   end
 end

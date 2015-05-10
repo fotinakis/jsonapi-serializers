@@ -356,18 +356,47 @@ describe JSONAPI::Serializer do
       })
     end
 
-    xdescribe 'context' do
-      it 'can be used to customize links' do
+    describe 'if/unless handling with contexts' do
+      it 'can be used to show/hide attributes' do
         post = create(:post)
-        options = {
-          serializer: MyApp::PostSerializerWithContextHandling,
-          context: {
-            customized_path_prefix: '/api/v1/',
-          }
-        }
-        expect(JSONAPI::Serializer.serialize(post, options)).to eq({
-          'data' => get_primary_data(post, MyApp::PostSerializer),
-        })
+        options = {serializer: MyApp::PostSerializerWithContextHandling}
+
+        options[:context] = {show_body: false}
+        data = JSONAPI::Serializer.serialize(post, options)
+        expect(data['data']['attributes']).to_not have_key('body')
+
+        options[:context] = {show_body: true}
+        data = JSONAPI::Serializer.serialize(post, options)
+        expect(data['data']['attributes']).to have_key('body')
+        expect(data['data']['attributes']['body']).to eq('Body for Post 1')
+
+        options[:context] = {hide_body: true}
+        data = JSONAPI::Serializer.serialize(post, options)
+        expect(data['data']['attributes']).to_not have_key('body')
+
+        options[:context] = {hide_body: false}
+        data = JSONAPI::Serializer.serialize(post, options)
+        expect(data['data']['attributes']).to have_key('body')
+        expect(data['data']['attributes']['body']).to eq('Body for Post 1')
+
+        options[:context] = {show_body: false, hide_body: false}
+        data = JSONAPI::Serializer.serialize(post, options)
+        expect(data['data']['attributes']).to_not have_key('body')
+
+        options[:context] = {show_body: true, hide_body: false}
+        data = JSONAPI::Serializer.serialize(post, options)
+        expect(data['data']['attributes']).to have_key('body')
+        expect(data['data']['attributes']['body']).to eq('Body for Post 1')
+
+        # Remember: attribute is configured as if: show_body?, unless: hide_body?
+        # and the results should be logically AND'd together:
+        options[:context] = {show_body: false, hide_body: true}
+        data = JSONAPI::Serializer.serialize(post, options)
+        expect(data['data']['attributes']).to_not have_key('body')
+
+        options[:context] = {show_body: true, hide_body: true}
+        data = JSONAPI::Serializer.serialize(post, options)
+        expect(data['data']['attributes']).to_not have_key('body')
       end
     end
   end

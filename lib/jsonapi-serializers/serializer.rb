@@ -76,28 +76,39 @@ module JSONAPI
 
       def attributes
         attributes = {}
-        self.class.attributes_map.each do |attribute_name, attr_name_or_block|
-          value = evaluate_attr_or_block(attribute_name, attr_name_or_block)
+        self.class.attributes_map.each do |attribute_name, attr_data|
+          next if !should_include?(attr_data[:options][:if], attr_data[:options][:unless])
+          value = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
           attributes[format_name(attribute_name)] = value
         end
         attributes
       end
 
-      def evaluate_attr_or_block(attribute_name, attr_name_or_block)
-        if attr_name_or_block.is_a?(Proc)
+      def should_include?(if_method_name, unless_method_name)
+        # Allow "if: :show_title?" and "unless: :hide_title?" attribute options.
+        show_attr = true
+        show_attr &&= send(if_method_name) if if_method_name
+        show_attr &&= !send(unless_method_name) if unless_method_name
+        show_attr
+      end
+      protected :should_include?
+
+      def evaluate_attr_or_block(attribute_name, attr_or_block)
+        if attr_or_block.is_a?(Proc)
           # A custom block was given, call it to get the value.
-          instance_eval(&attr_name_or_block)
+          instance_eval(&attr_or_block)
         else
           # Default behavior, call a method by the name of the attribute.
-          object.send(attr_name_or_block)
+          object.send(attr_or_block)
         end
       end
       protected :evaluate_attr_or_block
 
       def build_to_one_data(data)
         return if self.class.to_one_associations.nil?
-        self.class.to_one_associations.each do |attribute_name, attr_name_or_block|
-          related_object = evaluate_attr_or_block(attribute_name, attr_name_or_block)
+        self.class.to_one_associations.each do |attribute_name, attr_data|
+          next if !should_include?(attr_data[:options][:if], attr_data[:options][:unless])
+          related_object = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
 
           formatted_attribute_name = format_name(attribute_name)
           data[formatted_attribute_name] = {
@@ -124,8 +135,9 @@ module JSONAPI
 
       def build_to_many_data(data)
         return if self.class.to_many_associations.nil?
-        self.class.to_many_associations.each do |attribute_name, attr_name_or_block|
-          related_objects = evaluate_attr_or_block(attribute_name, attr_name_or_block) || []
+        self.class.to_many_associations.each do |attribute_name, attr_data|
+          next if !should_include?(attr_data[:options][:if], attr_data[:options][:unless])
+          related_objects = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block]) || []
 
           formatted_attribute_name = format_name(attribute_name)
           data[formatted_attribute_name] = {
@@ -168,6 +180,8 @@ module JSONAPI
       options[:is_collection] = options.delete('is_collection') || options[:is_collection] || false
       options[:include] = options.delete('include') || options[:include]
       options[:serializer] = options.delete('serializer') || options[:serializer]
+      options[:context] = options.delete('context') || options[:context] || {}
+      passthrough_options = {context: options[:context]}
 
       # Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources.
@@ -180,7 +194,7 @@ module JSONAPI
       elsif options[:is_collection]
         # Have object collection.
         serializer_class = options[:serializer] || find_serializer_class(objects.first)
-        primary_data = serialize_primary_multi(objects, serializer_class)
+        primary_data = serialize_primary_multi(objects, serializer_class, passthrough_options)
       else
         # Duck-typing check for a collection being passed without is_collection true.
         # We always must be told if serializing a collection because the JSON:API spec distinguishes
@@ -191,7 +205,7 @@ module JSONAPI
         end
         # Have single object.
         serializer_class = options[:serializer] || find_serializer_class(objects)
-        primary_data = serialize_primary(objects, serializer_class)
+        primary_data = serialize_primary(objects, serializer_class, passthrough_options)
       end
       result = {
         'data' => primary_data,
@@ -261,18 +275,29 @@ module JSONAPI
         object = nil
 
         # First, check if the attribute is a to-one association.
-        attr_name_or_block = serializer.class.to_one_associations[unformatted_attr_name.to_sym]
-        if attr_name_or_block
+        attr_data = serializer.class.to_one_associations[unformatted_attr_name.to_sym]
+        if attr_data
           is_to_many = false
+
+          # Skip attribute if excluded by 'if' or 'unless'.
+          next if !serializer.send(
+            :should_include?, attr_data[:options][:if], attr_data[:options][:unless])
+
           # Note: intentional high-coupling to instance method.
-          object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_name_or_block)
+          attr_or_block = attr_data[:attr_or_block]
+          object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_or_block)
         else
           # If not, check if the attribute is a to-many association.
           is_to_many = true
-          attr_name_or_block = serializer.class.to_many_associations[unformatted_attr_name.to_sym]
-          if attr_name_or_block
+          attr_data = serializer.class.to_many_associations[unformatted_attr_name.to_sym]
+          if attr_data
+            # Skip attribute if excluded by 'if' or 'unless'.
+            next if !serializer.send(
+              :should_include?, attr_data[:options][:if], attr_data[:options][:unless])
+
             # Note: intentional high-coupling to instance method.
-            object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_name_or_block)
+            attr_or_block = attr_data[:attr_or_block]
+            object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_or_block)
           end
         end
         next if object.nil?
