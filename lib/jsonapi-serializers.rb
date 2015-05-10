@@ -6,6 +6,6 @@ module JSONAPI
   module Serializers
     class Error < Exception; end
     class AmbiguousCollectionError < Error; end
-    class DeclarationError < Error; end
+    class InvalidIncludeError < Error; end
   end
 end

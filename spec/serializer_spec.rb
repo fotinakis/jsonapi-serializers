@@ -302,6 +302,10 @@ describe JSONAPI::Serializer do
         ],
       })
     end
+    it 'errors if include is not a defined attribute' do
+      user = create(:user)
+      expect { JSONAPI::Serializer.serialize(user, include: ['fake-attr']) }.to raise_error
+    end
     xit 'handles recursive loading of relationships' do
     end
   end

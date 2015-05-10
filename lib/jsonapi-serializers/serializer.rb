@@ -270,7 +270,7 @@ module JSONAPI
     class << self; protected :serialize_primary; end
 
     # Recursively find object relationships and add them to the result set.
-    def self.find_recursive_relationships(root_object, parsed_relationship_map, result_set = nil)
+    def self.find_recursive_relationships(root_object, parsed_relationship_map)
       result_set = Set.new
       parsed_relationship_map.each do |attribute_name, value|
         serializer = JSONAPI::Serializer.find_serializer(root_object)
@@ -280,8 +280,12 @@ module JSONAPI
         object = nil
 
         # First, check if the attribute is a to-one association.
-        attr_data = serializer.class.to_one_associations[unformatted_attr_name.to_sym]
+        is_valid_attr = false
+        attr_data = (
+          serializer.class.to_one_associations &&
+          serializer.class.to_one_associations[unformatted_attr_name.to_sym])
         if attr_data
+          is_valid_attr = true
           is_to_many = false
 
           # Skip attribute if excluded by 'if' or 'unless'.
@@ -293,9 +297,12 @@ module JSONAPI
           object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_or_block)
         else
           # If not, check if the attribute is a to-many association.
-          is_to_many = true
-          attr_data = serializer.class.to_many_associations[unformatted_attr_name.to_sym]
+          attr_data = (
+            serializer.class.to_many_associations &&
+            serializer.class.to_many_associations[unformatted_attr_name.to_sym])
           if attr_data
+            is_valid_attr = true
+            is_to_many = true
             # Skip attribute if excluded by 'if' or 'unless'.
             next if !serializer.send(
               :should_include?, attr_data[:options][:if], attr_data[:options][:unless])
@@ -304,6 +311,10 @@ module JSONAPI
             attr_or_block = attr_data[:attr_or_block]
             object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_or_block)
           end
+        end
+        if !is_valid_attr
+          raise JSONAPI::Serializers::InvalidIncludeError.new(
+            "'#{attribute_name}' is not a valid include.")
         end
         next if object.nil?
 
