@@ -183,6 +183,11 @@ module JSONAPI
       options[:context] = options.delete('context') || options[:context] || {}
       passthrough_options = {context: options[:context]}
 
+      if options[:is_collection] && !objects.respond_to?(:each)
+        raise JSONAPI::Serializers::AmbiguousCollectionError.new(
+          'Attempted to serialize a single object as a collection.')
+      end
+
       # Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources.
       # - an array of resource objects or an empty array ([]), for resource collections.

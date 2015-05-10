@@ -399,5 +399,9 @@ describe JSONAPI::Serializer do
         expect(data['data']['attributes']).to_not have_key('body')
       end
     end
+    describe 'context' do
+      xit 'is correctly passed through all serializers' do
+      end
+    end
   end
 end
