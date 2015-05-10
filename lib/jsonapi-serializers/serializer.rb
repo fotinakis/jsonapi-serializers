@@ -273,6 +273,9 @@ module JSONAPI
     def self.find_recursive_relationships(root_object, parsed_relationship_map)
       result_set = Set.new
       parsed_relationship_map.each do |attribute_name, children|
+        # Skip the sentinal value, but we need to preserve it for siblings.
+        next if attribute_name == :_include
+
         serializer = JSONAPI::Serializer.find_serializer(root_object)
         unformatted_attr_name = serializer.unformat_name(attribute_name)
 
@@ -292,8 +295,8 @@ module JSONAPI
           next if !serializer.send(
             :should_include?, attr_data[:options][:if], attr_data[:options][:unless])
 
-          # Note: intentional high-coupling to instance method.
           attr_or_block = attr_data[:attr_or_block]
+          # Note: intentional high-coupling to instance method.
           object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_or_block)
         else
           # If not, check if the attribute is a to-many association.
@@ -308,8 +311,8 @@ module JSONAPI
             next if !serializer.send(
               :should_include?, attr_data[:options][:if], attr_data[:options][:unless])
 
-            # Note: intentional high-coupling to instance method.
             attr_or_block = attr_data[:attr_or_block]
+            # Note: intentional high-coupling to instance method.
             object = serializer.send(:evaluate_attr_or_block, attribute_name, attr_or_block)
           end
         end
@@ -325,7 +328,7 @@ module JSONAPI
         # wants to fetch the associated authors without fetching the comments again.
         # http://jsonapi.org/format/#fetching-includes
         objects = is_to_many ? object : [object]
-        if children['_include'] == true
+        if children[:_include] == true
           # Include the current level objects if the attribute exists.
           objects.each do |obj|
             result_set << obj
@@ -333,7 +336,6 @@ module JSONAPI
         end
 
         # Recurse deeper!
-        children.delete('_include')
         if !children.empty?
           # For each object we just loaded, find all deeper recursive relationships.
           objects.each do |obj|
@@ -346,14 +348,14 @@ module JSONAPI
     class << self; protected :find_recursive_relationships; end
 
     # Takes a list of relationship paths and returns a hash as deep as the given paths.
-    # The '_include' => true is a sentinal value that specifies whether the parent level should
+    # The _include: true is a sentinal value that specifies whether the parent level should
     # be included.
     #
     # Example:
     #   Given: ['author', 'comments', 'comments.user']
     #   Returns: {
-    #     'author' => {'_include' => true},
-    #     'comments' => {'_include' => true, 'user' => {'_include' => true}},
+    #     'author' => {_include: true},
+    #     'comments' => {_include: true, 'user' => {_include: true}},
     #   }
     def self.parse_relationship_paths(paths)
       paths = paths.split(',') if paths.is_a?(String)
@@ -364,7 +366,7 @@ module JSONAPI
         if !path.include?('.')
           # Base case.
           relationships[path] ||= {}
-          relationships[path].merge!({'_include' => true})
+          relationships[path].merge!({_include: true})
         else
           # Recurisive case.
           first_level, rest = path.split('.', 2)

@@ -324,13 +324,13 @@ describe JSONAPI::Serializer do
       user = create(:user)
       long_comments = create_list(:long_comment, 2, user: user)
       post = create(:post, :with_author, long_comments: long_comments)
-
       # Make sure each long-comment has a circular reference back to the post.
       long_comments.each { |c| c.post = post }
 
       expected_data = {
         'data' => get_primary_data(post, MyApp::PostSerializer),
         'included' => [
+          # Only the author is included:
           get_primary_data(post.author, MyApp::UserSerializer),
         ],
       }
@@ -341,6 +341,38 @@ describe JSONAPI::Serializer do
       expect(actual_data['data']).to eq(expected_data['data'])
       expect(actual_data['included']).to eq(expected_data['included'])
       expect(actual_data).to eq(expected_data)
+    end
+    it 'handles recursive loading of multiple to-one relationships' do
+      first_user = create(:user)
+      second_user = create(:user)
+      first_comment = create(:long_comment, user: first_user)
+      second_comment = create(:long_comment, user: second_user)
+      long_comments = [first_comment, second_comment]
+      post = create(:post, :with_author, long_comments: long_comments)
+      # Make sure each long-comment has a circular reference back to the post.
+      long_comments.each { |c| c.post = post }
+
+      expected_data = {
+        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'included' => [
+          get_primary_data(first_user, MyApp::UserSerializer),
+          get_primary_data(second_user, MyApp::UserSerializer),
+        ],
+      }
+      includes = ['long-comments.user']
+      actual_data = JSONAPI::Serializer.serialize(post, include: includes)
+
+      # Multiple expectations for better diff output for debugging.
+      expect(actual_data['data']).to eq(expected_data['data'])
+      expect(actual_data['included']).to eq(expected_data['included'])
+      expect(actual_data).to eq(expected_data)
+    end
+    it 'handles recursive loading of to-many relationships with overlapping include paths' do
+      user = create(:user)
+      long_comments = create_list(:long_comment, 2, user: user)
+      post = create(:post, :with_author, long_comments: long_comments)
+      # Make sure each long-comment has a circular reference back to the post.
+      long_comments.each { |c| c.post = post }
 
       expected_data = {
         'data' => get_primary_data(post, MyApp::PostSerializer),
@@ -377,36 +409,36 @@ describe JSONAPI::Serializer do
     it 'correctly handles single-level relationship paths' do
       result = JSONAPI::Serializer.send(:parse_relationship_paths, ['long-comments'])
       expect(result).to eq({
-        'long-comments' => {'_include' => true}
+        'long-comments' => {_include: true}
       })
     end
     it 'correctly handles multi-level relationship paths' do
       result = JSONAPI::Serializer.send(:parse_relationship_paths, ['long-comments.user'])
       expect(result).to eq({
-        'long-comments' => {'user' => {'_include' => true}}
+        'long-comments' => {'user' => {_include: true}}
       })
     end
     it 'correctly handles multi-level relationship paths with same parent' do
       paths = ['long-comments', 'long-comments.user']
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
-        'long-comments' => {'_include' => true, 'user' => {'_include' => true}}
+        'long-comments' => {_include: true, 'user' => {_include: true}}
       })
     end
     it 'correctly handles mixed single and multi-level relationship paths' do
       paths = ['author', 'long-comments', 'long-comments.post.author']
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
-        'author' => {'_include' => true},
-        'long-comments' => {'_include' => true, 'post' => {'author' => {'_include' => true}}},
+        'author' => {_include: true},
+        'long-comments' => {_include: true, 'post' => {'author' => {_include: true}}},
       })
     end
     it 'accepts and parses string arguments' do
       paths = 'author, long-comments,long-comments.post.author'
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
-        'author' => {'_include' => true},
-        'long-comments' => {'_include' => true, 'post' => {'author' => {'_include' => true}}},
+        'author' => {_include: true},
+        'long-comments' => {_include: true, 'post' => {'author' => {_include: true}}},
       })
     end
 
