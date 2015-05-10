@@ -176,7 +176,7 @@ module JSONAPI
     end
 
     def self.serialize(objects, options = {})
-      # Normalize option symbols and strings.
+      # Normalize option strings to symbols.
       options[:is_collection] = options.delete('is_collection') || options[:is_collection] || false
       options[:include] = options.delete('include') || options[:include]
       options[:serializer] = options.delete('serializer') || options[:serializer]
@@ -188,7 +188,7 @@ module JSONAPI
           'Attempted to serialize a single object as a collection.')
       end
 
-      # Primary data MUST be either:
+      # Spec: Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources.
       # - an array of resource objects or an empty array ([]), for resource collections.
       # http://jsonapi.org/format/#document-structure-top-level
@@ -218,11 +218,11 @@ module JSONAPI
 
       # If 'include' relationships are given, recursively find and include each object once.
       if options[:include]
-        # Parse the given relationship paths.
+        # Parse the given relationship paths into a custom .
         parsed_relationship_map = parse_relationship_paths(options[:include])
 
-        # Starting with every primary root object, recursively search and find objects that match
-        # the given include paths.
+        # Given all the primary objects (either the single root object or collection of objects),
+        # recursively search and find objects that match the given include paths.
         objects = options[:is_collection] ? objects : [objects]
         included_objects = Set.new
         objects.each do |obj|
@@ -238,7 +238,7 @@ module JSONAPI
     # ---
 
     def self.serialize_primary_multi(objects, serializer_class, options = {})
-      # Primary data MUST be either:
+      # Spec: Primary data MUST be either:
       # - an array of resource objects or an empty array ([]), for resource collections.
       # http://jsonapi.org/format/#document-structure-top-level
       return [] if !objects.any?
@@ -248,7 +248,7 @@ module JSONAPI
     class << self; protected :serialize_primary_multi; end
 
     def self.serialize_primary(object, serializer_class, options = {})
-      # Primary data MUST be either:
+      # Spec: Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources.
       # http://jsonapi.org/format/#document-structure-top-level
       return if object.nil?
@@ -272,19 +272,19 @@ module JSONAPI
     # Recursively find object relationships and add them to the result set.
     def self.find_recursive_relationships(root_object, parsed_relationship_map)
       result_set = Set.new
-      parsed_relationship_map.each do |attribute_name, value|
+      parsed_relationship_map.each do |attribute_name, children|
         serializer = JSONAPI::Serializer.find_serializer(root_object)
         unformatted_attr_name = serializer.unformat_name(attribute_name)
 
-        # TODO: need to fail with a custom error if the given include attribute doesn't exist.
-        object = nil
-
+        # We know the name of this relationship, but we don't know where it is stored internally.
         # First, check if the attribute is a to-one association.
+        object = nil
         is_valid_attr = false
         attr_data = (
           serializer.class.to_one_associations &&
           serializer.class.to_one_associations[unformatted_attr_name.to_sym])
         if attr_data
+          # Found the attribute in the to-one associations.
           is_valid_attr = true
           is_to_many = false
 
@@ -301,6 +301,7 @@ module JSONAPI
             serializer.class.to_many_associations &&
             serializer.class.to_many_associations[unformatted_attr_name.to_sym])
           if attr_data
+            # Found the attribute in the to-many associations.
             is_valid_attr = true
             is_to_many = true
             # Skip attribute if excluded by 'if' or 'unless'.
@@ -318,16 +319,27 @@ module JSONAPI
         end
         next if object.nil?
 
-        if value['_include'] == true
+        # We only include parent values if the sential value _include is set. This satifies the
+        # spec note: A request for comments.author should not automatically also include comments
+        # in the response. This can happen if the client already has the comments locally, and now
+        # wants to fetch the associated authors without fetching the comments again.
+        # http://jsonapi.org/format/#fetching-includes
+        objects = is_to_many ? object : [object]
+        if children['_include'] == true
           # Include the current level objects if the attribute exists.
-          objects = is_to_many ? object : [object]
           objects.each do |obj|
             result_set << obj
           end
         end
 
         # Recurse deeper!
-        # find_recursive_relationships()
+        children.delete('_include')
+        if !children.empty?
+          # For each object we just loaded, find all deeper recursive relationships.
+          objects.each do |obj|
+            result_set.merge(find_recursive_relationships(obj, children))
+          end
+        end
       end
       result_set
     end
