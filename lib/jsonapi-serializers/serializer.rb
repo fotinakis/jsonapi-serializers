@@ -12,6 +12,10 @@ module JSONAPI
     end
 
     module ClassMethods
+      def serialize(object, options = {})
+        options[:serializer] = self
+        JSONAPI::Serializer.serialize(object, options)
+      end
     end
 
     module InstanceMethods
@@ -295,9 +299,11 @@ module JSONAPI
     #     'comments' => {'_include' => true, 'user' => {'_include' => true}},
     #   }
     def self.parse_relationship_paths(paths)
+      paths = paths.split(',') if paths.is_a?(String)
+
       relationships = {}
       paths.each do |path|
-        path = path.to_s
+        path = path.to_s.strip
         if !path.include?('.')
           # Base case.
           relationships[path] ||= {}

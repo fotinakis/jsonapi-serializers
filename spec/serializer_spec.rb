@@ -303,6 +303,14 @@ describe JSONAPI::Serializer do
       })
     end
   end
+  describe 'serialize (class method)' do
+    it 'delegates to module method but overrides serializer' do
+      post = create(:post)
+      expect(MyApp::SimplestPostSerializer.serialize(post)).to eq({
+        'data' => get_primary_data(post, MyApp::SimplestPostSerializer),
+      })
+    end
+  end
   describe 'internal-only parse_relationship_paths' do
     it 'correctly handles empty arrays' do
       result = JSONAPI::Serializer.send(:parse_relationship_paths, [])
@@ -329,6 +337,14 @@ describe JSONAPI::Serializer do
     end
     it 'correctly handles mixed single and multi-level relationship paths' do
       paths = ['author', 'long-comments', 'long-comments.post.author']
+      result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
+      expect(result).to eq({
+        'author' => {'_include' => true},
+        'long-comments' => {'_include' => true, 'post' => {'author' => {'_include' => true}}},
+      })
+    end
+    it 'accepts and parses string arguments' do
+      paths = 'author, long-comments,long-comments.post.author'
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
         'author' => {'_include' => true},
