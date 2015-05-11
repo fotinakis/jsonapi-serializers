@@ -29,7 +29,7 @@ module JSONAPI
         @object = object
         @context = options[:context] || {}
 
-        # Internal serializer options, not exposed through attr_accessor.
+        # Internal serializer options, not exposed through attr_accessor. No touchie.
         @_include_linkages = options[:include_linkages] || []
       end
 
@@ -191,18 +191,24 @@ module JSONAPI
 
       # Normalize includes.
       includes = options[:include]
-      options[:include] = (includes.is_a?(String) ? includes.split(',') : includes).uniq if includes
+      includes = (includes.is_a?(String) ? includes.split(',') : includes).uniq if includes
 
       # An internal-only structure that is passed through serializers as they are created.
       passthrough_options = {
         context: options[:context],
         serializer: options[:serializer],
-        include: options[:include]
+        include: includes
       }
 
       if options[:is_collection] && !objects.respond_to?(:each)
         raise JSONAPI::Serializers::AmbiguousCollectionError.new(
           'Attempted to serialize a single object as a collection.')
+      end
+
+      # Automatically include linkage data for any relation that is also included.
+      if includes
+        direct_children_includes = includes.reject { |key| key.include?('.') }
+        passthrough_options[:include_linkages] = direct_children_includes
       end
 
       # Spec: Primary data MUST be either:
@@ -234,11 +240,10 @@ module JSONAPI
       }
 
       # If 'include' relationships are given, recursively find and include each object once.
-      if options[:include]
-        parsed_relationship_map = parse_relationship_paths(options[:include])
-
+      if includes
         # Given all the primary objects (either the single root object or collection of objects),
         # recursively search and find objects that match the given include paths.
+        parsed_relationship_map = parse_relationship_paths(includes)
         objects = options[:is_collection] ? objects.to_a : [objects]
         included_objects = Set.new
         objects.compact.each do |obj|
