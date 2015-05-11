@@ -114,21 +114,21 @@ module JSONAPI
             'self' => relationship_self_link(attribute_name),
             'related' => relationship_related_link(attribute_name),
           }
-          related_object = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
-          if related_object.nil?
-            # Spec: Resource linkage MUST be represented as one of the following:
-            # - null for empty to-one relationships.
-            # http://jsonapi.org/format/#document-structure-resource-relationships
-            data[formatted_attribute_name].merge!({'linkage' => nil})
-          else
-            related_object_serializer = JSONAPI::Serializer.find_serializer(related_object)
-            data[formatted_attribute_name].merge!({
-              'linkage' => {
-                'type' => related_object_serializer.type.to_s,
-                'id' => related_object_serializer.id.to_s,
-              },
-            })
-          end
+          # related_object = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
+          # if related_object.nil?
+          #   # Spec: Resource linkage MUST be represented as one of the following:
+          #   # - null for empty to-one relationships.
+          #   # http://jsonapi.org/format/#document-structure-resource-relationships
+          #   data[formatted_attribute_name].merge!({'linkage' => nil})
+          # else
+          #   related_object_serializer = JSONAPI::Serializer.find_serializer(related_object)
+          #   data[formatted_attribute_name].merge!({
+          #     'linkage' => {
+          #       'type' => related_object_serializer.type.to_s,
+          #       'id' => related_object_serializer.id.to_s,
+          #     },
+          #   })
+          # end
         end
       end
       protected :build_to_one_data
@@ -148,15 +148,15 @@ module JSONAPI
           # - an empty array ([]) for empty to-many relationships.
           # - an array of linkage objects for non-empty to-many relationships.
           # http://jsonapi.org/format/#document-structure-resource-relationships
-          data[formatted_attribute_name].merge!({'linkage' => []})
-          related_objects = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block]) || []
-          related_objects.each do |related_object|
-            related_object_serializer = JSONAPI::Serializer.find_serializer(related_object)
-            data[formatted_attribute_name]['linkage'] << {
-              'type' => related_object_serializer.type.to_s,
-              'id' => related_object_serializer.id.to_s,
-            }
-          end
+          # data[formatted_attribute_name].merge!({'linkage' => []})
+          # related_objects = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block]) || []
+          # related_objects.each do |related_object|
+          #   related_object_serializer = JSONAPI::Serializer.find_serializer(related_object)
+          #   data[formatted_attribute_name]['linkage'] << {
+          #     'type' => related_object_serializer.type.to_s,
+          #     'id' => related_object_serializer.id.to_s,
+          #   }
+          # end
         end
       end
       protected :build_to_many_data
@@ -181,7 +181,17 @@ module JSONAPI
       options[:include] = options.delete('include') || options[:include]
       options[:serializer] = options.delete('serializer') || options[:serializer]
       options[:context] = options.delete('context') || options[:context] || {}
-      passthrough_options = {context: options[:context], serializer: options[:serializer]}
+
+      # Normalize includes.
+      includes = options[:include]
+      options[:include] = (includes.is_a?(String) ? includes.split(',') : includes).uniq if includes
+
+      # An internal-only structure that is passed through serializers as they are created.
+      passthrough_options = {
+        context: options[:context],
+        serializer: options[:serializer],
+        include: options[:include]
+      }
 
       if options[:is_collection] && !objects.respond_to?(:each)
         raise JSONAPI::Serializers::AmbiguousCollectionError.new(
@@ -256,7 +266,7 @@ module JSONAPI
       # http://jsonapi.org/format/#document-structure-top-level
       return if object.nil?
 
-      serializer = serializer_class.new(object, context: options[:context])
+      serializer = serializer_class.new(object, options)
       data = {
         'id' => serializer.id.to_s,
         'type' => serializer.type.to_s,
@@ -361,9 +371,6 @@ module JSONAPI
     #     'comments' => {_include: true, 'user' => {_include: true}},
     #   }
     def self.parse_relationship_paths(paths)
-      paths = paths.split(',') if paths.is_a?(String)
-      paths.uniq!
-
       relationships = {}
       paths.each { |path| merge_relationship_path(path, relationships) }
       relationships

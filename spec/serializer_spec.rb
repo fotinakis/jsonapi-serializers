@@ -27,131 +27,6 @@ describe JSONAPI::Serializer do
         },
       })
     end
-    it 'can serialize primary data for a null to-one relationship' do
-      post = create(:post, author: nil)
-      primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
-      expect(primary_data).to eq({
-        'id' => '1',
-        'type' => 'posts',
-        'attributes' => {
-          'title' => 'Title for Post 1',
-          'long-content' => 'Body for Post 1',
-        },
-        'links' => {
-          'self' => '/posts/1',
-          'author' => {
-            'self' => '/posts/1/links/author',
-            'related' => '/posts/1/author',
-            # Spec: Resource linkage MUST be represented as one of the following:
-            # - null for empty to-one relationships.
-            # http://jsonapi.org/format/#document-structure-resource-relationships
-            'linkage' => nil,
-          },
-          'long-comments' => {
-            'self' => '/posts/1/links/long-comments',
-            'related' => '/posts/1/long-comments',
-            'linkage' => [],
-          },
-        },
-      })
-    end
-    it 'can serialize primary data for a simple to-one relationship' do
-      post = create(:post, :with_author)
-      primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
-      expect(primary_data).to eq({
-        'id' => '1',
-        'type' => 'posts',
-        'attributes' => {
-          'title' => 'Title for Post 1',
-          'long-content' => 'Body for Post 1',
-        },
-        'links' => {
-          'self' => '/posts/1',
-          'author' => {
-            'self' => '/posts/1/links/author',
-            'related' => '/posts/1/author',
-            # Spec: Resource linkage MUST be represented as one of the following:
-            # - a 'linkage object' (defined below) for non-empty to-one relationships.
-            # http://jsonapi.org/format/#document-structure-resource-relationships
-            'linkage' => {
-              'type' => 'users',
-              'id' => '1',
-            },
-          },
-          'long-comments' => {
-            'self' => '/posts/1/links/long-comments',
-            'related' => '/posts/1/long-comments',
-            'linkage' => [],
-          },
-        },
-      })
-    end
-    it 'can serialize primary data for an empty to-many relationship' do
-      post = create(:post, long_comments: [])
-      primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
-      expect(primary_data).to eq({
-        'id' => '1',
-        'type' => 'posts',
-        'attributes' => {
-          'title' => 'Title for Post 1',
-          'long-content' => 'Body for Post 1',
-        },
-        'links' => {
-          'self' => '/posts/1',
-          'author' => {
-            'self' => '/posts/1/links/author',
-            'related' => '/posts/1/author',
-            'linkage' => nil,
-          },
-          'long-comments' => {
-            'self' => '/posts/1/links/long-comments',
-            'related' => '/posts/1/long-comments',
-            # Spec: Resource linkage MUST be represented as one of the following:
-            # - an empty array ([]) for empty to-many relationships.
-            # http://jsonapi.org/format/#document-structure-resource-relationships
-            'linkage' => [],
-          },
-        },
-      })
-    end
-    it 'can serialize primary data for a simple to-many relationship' do
-      long_comments = create_list(:long_comment, 2)
-      post = create(:post, long_comments: long_comments)
-      primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
-      expect(primary_data).to eq({
-        'id' => '1',
-        'type' => 'posts',
-        'attributes' => {
-          'title' => 'Title for Post 1',
-          'long-content' => 'Body for Post 1',
-        },
-        'links' => {
-          'self' => '/posts/1',
-          'author' => {
-            'self' => '/posts/1/links/author',
-            'related' => '/posts/1/author',
-            'linkage' => nil,
-          },
-          'long-comments' => {
-            'self' => '/posts/1/links/long-comments',
-            'related' => '/posts/1/long-comments',
-            # Spec: Resource linkage MUST be represented as one of the following:
-            # - an array of linkage objects for non-empty to-many relationships.
-            # http://jsonapi.org/format/#document-structure-resource-relationships
-            'linkage' => [
-              {
-                'type' => 'long-comments',
-                'id' => '1',
-              },
-              {
-                'type' => 'long-comments',
-                'id' => '2',
-              },
-            ],
-          },
-        },
-      })
-    end
     it 'can serialize primary data for a simple object with a long name' do
       long_comment = create(:long_comment, post: create(:post))
       primary_data = serialize_primary(long_comment, {serializer: MyApp::LongCommentSerializer})
@@ -166,40 +41,188 @@ describe JSONAPI::Serializer do
           'user' => {
             'self' => '/long-comments/1/links/user',
             'related' => '/long-comments/1/user',
-            'linkage' => nil,
           },
           'post' => {
             'self' => '/long-comments/1/links/post',
             'related' => '/long-comments/1/post',
-            'linkage' => {
-              'type' => 'posts',
-              'id' => '1',
-            },
           },
         },
       })
     end
-  end
-  it 'can serialize primary data for a simple object with resource-level metadata' do
-    post = create(:post)
-    primary_data = serialize_primary(post, {serializer: MyApp::PostSerializerWithMetadata})
-    expect(primary_data).to eq({
-      'id' => '1',
-      'type' => 'posts',
-      'attributes' => {
-        'title' => 'Title for Post 1',
-        'long-content' => 'Body for Post 1',
-      },
-      'links' => {
-        'self' => '/posts/1',
-      },
-      'meta' => {
-        'copyright' => 'Copyright 2015 Example Corp.',
-        'authors' => [
-          'Aliens',
-        ],
-      },
-    })
+    it 'can serialize primary data for a simple object with resource-level metadata' do
+      post = create(:post)
+      primary_data = serialize_primary(post, {serializer: MyApp::PostSerializerWithMetadata})
+      expect(primary_data).to eq({
+        'id' => '1',
+        'type' => 'posts',
+        'attributes' => {
+          'title' => 'Title for Post 1',
+          'long-content' => 'Body for Post 1',
+        },
+        'links' => {
+          'self' => '/posts/1',
+        },
+        'meta' => {
+          'copyright' => 'Copyright 2015 Example Corp.',
+          'authors' => [
+            'Aliens',
+          ],
+        },
+      })
+    end
+    context 'without any linkage includes (default)' do
+      it 'can serialize primary data for an object with to-one and to-many relationships' do
+        post = create(:post)
+        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
+        expect(primary_data).to eq({
+          'id' => '1',
+          'type' => 'posts',
+          'attributes' => {
+            'title' => 'Title for Post 1',
+            'long-content' => 'Body for Post 1',
+          },
+          'links' => {
+            'self' => '/posts/1',
+            # Both to-one and to-many links are present, but neither include linkage:
+            'author' => {
+              'self' => '/posts/1/links/author',
+              'related' => '/posts/1/author',
+            },
+            'long-comments' => {
+              'self' => '/posts/1/links/long-comments',
+              'related' => '/posts/1/long-comments',
+            },
+          },
+        })
+      end
+    end
+    xcontext 'with linkage includes' do
+      it 'can serialize primary data for a null to-one relationship' do
+        post = create(:post, author: nil)
+        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
+        expect(primary_data).to eq({
+          'id' => '1',
+          'type' => 'posts',
+          'attributes' => {
+            'title' => 'Title for Post 1',
+            'long-content' => 'Body for Post 1',
+          },
+          'links' => {
+            'self' => '/posts/1',
+            'author' => {
+              'self' => '/posts/1/links/author',
+              'related' => '/posts/1/author',
+              # Spec: Resource linkage MUST be represented as one of the following:
+              # - null for empty to-one relationships.
+              # http://jsonapi.org/format/#document-structure-resource-relationships
+              'linkage' => nil,
+            },
+            'long-comments' => {
+              'self' => '/posts/1/links/long-comments',
+              'related' => '/posts/1/long-comments',
+              'linkage' => [],
+            },
+          },
+        })
+      end
+      it 'can serialize primary data for a simple to-one relationship' do
+        post = create(:post, :with_author)
+        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
+        expect(primary_data).to eq({
+          'id' => '1',
+          'type' => 'posts',
+          'attributes' => {
+            'title' => 'Title for Post 1',
+            'long-content' => 'Body for Post 1',
+          },
+          'links' => {
+            'self' => '/posts/1',
+            'author' => {
+              'self' => '/posts/1/links/author',
+              'related' => '/posts/1/author',
+              # Spec: Resource linkage MUST be represented as one of the following:
+              # - a 'linkage object' (defined below) for non-empty to-one relationships.
+              # http://jsonapi.org/format/#document-structure-resource-relationships
+              'linkage' => {
+                'type' => 'users',
+                'id' => '1',
+              },
+            },
+            'long-comments' => {
+              'self' => '/posts/1/links/long-comments',
+              'related' => '/posts/1/long-comments',
+              'linkage' => [],
+            },
+          },
+        })
+      end
+      it 'can serialize primary data for an empty to-many relationship' do
+        post = create(:post, long_comments: [])
+        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
+        expect(primary_data).to eq({
+          'id' => '1',
+          'type' => 'posts',
+          'attributes' => {
+            'title' => 'Title for Post 1',
+            'long-content' => 'Body for Post 1',
+          },
+          'links' => {
+            'self' => '/posts/1',
+            'author' => {
+              'self' => '/posts/1/links/author',
+              'related' => '/posts/1/author',
+              'linkage' => nil,
+            },
+            'long-comments' => {
+              'self' => '/posts/1/links/long-comments',
+              'related' => '/posts/1/long-comments',
+              # Spec: Resource linkage MUST be represented as one of the following:
+              # - an empty array ([]) for empty to-many relationships.
+              # http://jsonapi.org/format/#document-structure-resource-relationships
+              'linkage' => [],
+            },
+          },
+        })
+      end
+      it 'can serialize primary data for a simple to-many relationship' do
+        long_comments = create_list(:long_comment, 2)
+        post = create(:post, long_comments: long_comments)
+        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
+        expect(primary_data).to eq({
+          'id' => '1',
+          'type' => 'posts',
+          'attributes' => {
+            'title' => 'Title for Post 1',
+            'long-content' => 'Body for Post 1',
+          },
+          'links' => {
+            'self' => '/posts/1',
+            'author' => {
+              'self' => '/posts/1/links/author',
+              'related' => '/posts/1/author',
+              'linkage' => nil,
+            },
+            'long-comments' => {
+              'self' => '/posts/1/links/long-comments',
+              'related' => '/posts/1/long-comments',
+              # Spec: Resource linkage MUST be represented as one of the following:
+              # - an array of linkage objects for non-empty to-many relationships.
+              # http://jsonapi.org/format/#document-structure-resource-relationships
+              'linkage' => [
+                {
+                  'type' => 'long-comments',
+                  'id' => '1',
+                },
+                {
+                  'type' => 'long-comments',
+                  'id' => '2',
+                },
+              ],
+            },
+          },
+        })
+      end
+    end
   end
 
   describe 'JSONAPI::Serializer.serialize' do
@@ -381,7 +404,8 @@ describe JSONAPI::Serializer do
           serialize_primary(post.author, {serializer: MyApp::UserSerializer}),
         ],
       }
-      includes = ['long-comments', 'long-comments.post.author']
+      # Also test that it handles string include arguments.
+      includes = 'long-comments, long-comments.post.author'
       actual_data = JSONAPI::Serializer.serialize(post, include: includes)
 
       # Multiple expectations for better diff output for debugging.
@@ -444,14 +468,6 @@ describe JSONAPI::Serializer do
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
         'foo' => {_include: true, 'bar' => {'baz' => {_include: true}}}
-      })
-    end
-    it 'accepts and parses string arguments' do
-      paths = 'foo, bar,bar.baz.qux'
-      result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
-      expect(result).to eq({
-        'foo' => {_include: true},
-        'bar' => {_include: true, 'baz' => {'qux' => {_include: true}}},
       })
     end
   end
