@@ -1,16 +1,20 @@
 describe JSONAPI::Serializer do
+  def serialize_primary(object, options = {})
+    # Note: intentional high-coupling to protected method for tests.
+    JSONAPI::Serializer.send(:serialize_primary, object, options)
+  end
+
   describe 'internal-only serialize_primary' do
     it 'serializes nil to nil' do
       # Spec: Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources
       # http://jsonapi.org/format/#document-structure-top-level
-      primary_data = JSONAPI::Serializer.send(:serialize_primary, nil, MyApp::PostSerializer)
+      primary_data = serialize_primary(nil, {serializer: MyApp::PostSerializer})
       expect(primary_data).to be_nil
     end
     it 'can serialize primary data for a simple object' do
       post = create(:post)
-      serializer_class = MyApp::SimplestPostSerializer
-      primary_data = JSONAPI::Serializer.send(:serialize_primary, post, serializer_class)
+      primary_data = serialize_primary(post, {serializer: MyApp::SimplestPostSerializer})
       expect(primary_data).to eq({
         'id' => '1',
         'type' => 'posts',
@@ -25,8 +29,7 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize primary data for a null to-one relationship' do
       post = create(:post, author: nil)
-      serializer_class = MyApp::PostSerializer
-      primary_data = JSONAPI::Serializer.send(:serialize_primary, post, serializer_class)
+      primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
       expect(primary_data).to eq({
         'id' => '1',
         'type' => 'posts',
@@ -54,8 +57,7 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize primary data for a simple to-one relationship' do
       post = create(:post, :with_author)
-      serializer_class = MyApp::PostSerializer
-      primary_data = JSONAPI::Serializer.send(:serialize_primary, post, serializer_class)
+      primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
       expect(primary_data).to eq({
         'id' => '1',
         'type' => 'posts',
@@ -86,8 +88,7 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize primary data for an empty to-many relationship' do
       post = create(:post, long_comments: [])
-      serializer_class = MyApp::PostSerializer
-      primary_data = JSONAPI::Serializer.send(:serialize_primary, post, serializer_class)
+      primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
       expect(primary_data).to eq({
         'id' => '1',
         'type' => 'posts',
@@ -116,8 +117,7 @@ describe JSONAPI::Serializer do
     it 'can serialize primary data for a simple to-many relationship' do
       long_comments = create_list(:long_comment, 2)
       post = create(:post, long_comments: long_comments)
-      serializer_class = MyApp::PostSerializer
-      primary_data = JSONAPI::Serializer.send(:serialize_primary, post, serializer_class)
+      primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
       expect(primary_data).to eq({
         'id' => '1',
         'type' => 'posts',
@@ -154,8 +154,7 @@ describe JSONAPI::Serializer do
     end
     it 'can serialize primary data for a simple object with a long name' do
       long_comment = create(:long_comment, post: create(:post))
-      serializer_class = MyApp::LongCommentSerializer
-      primary_data = JSONAPI::Serializer.send(:serialize_primary, long_comment, serializer_class)
+      primary_data = serialize_primary(long_comment, {serializer: MyApp::LongCommentSerializer})
       expect(primary_data).to eq({
         'id' => '1',
         'type' => 'long-comments',
@@ -183,8 +182,7 @@ describe JSONAPI::Serializer do
   end
   it 'can serialize primary data for a simple object with resource-level metadata' do
     post = create(:post)
-    serializer_class = MyApp::PostSerializerWithMetadata
-    primary_data = JSONAPI::Serializer.send(:serialize_primary, post, serializer_class)
+    primary_data = serialize_primary(post, {serializer: MyApp::PostSerializerWithMetadata})
     expect(primary_data).to eq({
       'id' => '1',
       'type' => 'posts',
@@ -202,10 +200,6 @@ describe JSONAPI::Serializer do
         ],
       },
     })
-  end
-
-  def get_primary_data(object, serializer_class)
-    JSONAPI::Serializer.send(:serialize_primary, object, serializer_class)
   end
 
   describe 'JSONAPI::Serializer.serialize' do
@@ -226,15 +220,15 @@ describe JSONAPI::Serializer do
     it 'can serialize a simple object' do
       post = create(:post)
       expect(JSONAPI::Serializer.serialize(post)).to eq({
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
     it 'can serialize a collection' do
       posts = create_list(:post, 2)
       expect(JSONAPI::Serializer.serialize(posts, is_collection: true)).to eq({
         'data' => [
-          get_primary_data(posts.first, MyApp::PostSerializer),
-          get_primary_data(posts.last, MyApp::PostSerializer),
+          serialize_primary(posts.first, {serializer: MyApp::PostSerializer}),
+          serialize_primary(posts.last, {serializer: MyApp::PostSerializer}),
         ],
       })
     end
@@ -255,30 +249,30 @@ describe JSONAPI::Serializer do
       post = create(:post)
       options = {serializer: MyApp::SimplestPostSerializer}
       expect(JSONAPI::Serializer.serialize(post, options)).to eq({
-        'data' => get_primary_data(post, MyApp::SimplestPostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::SimplestPostSerializer}),
       })
     end
     it 'handles include of nil to-one relationship in compound document' do
       post = create(:post)
 
       expect(JSONAPI::Serializer.serialize(post, include: ['author'])).to eq({
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [],
       })
     end
     it 'handles include of simple to-one relationship in compound document' do
       post = create(:post, :with_author)
       expect(JSONAPI::Serializer.serialize(post, include: ['author'])).to eq({
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
-          get_primary_data(post.author, MyApp::UserSerializer),
+          serialize_primary(post.author, {serializer: MyApp::UserSerializer}),
         ],
       })
     end
     it 'handles include of empty to-many relationships in compound document' do
       post = create(:post, :with_author, long_comments: [])
       expect(JSONAPI::Serializer.serialize(post, include: ['long-comments'])).to eq({
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [],
       })
     end
@@ -287,10 +281,10 @@ describe JSONAPI::Serializer do
       post = create(:post, :with_author, long_comments: long_comments)
 
       expect(JSONAPI::Serializer.serialize(post, include: ['long-comments'])).to eq({
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
-          get_primary_data(long_comments.first, MyApp::LongCommentSerializer),
-          get_primary_data(long_comments.last, MyApp::LongCommentSerializer),
+          serialize_primary(long_comments.first, {serializer: MyApp::LongCommentSerializer}),
+          serialize_primary(long_comments.last, {serializer: MyApp::LongCommentSerializer}),
         ],
       })
     end
@@ -300,9 +294,9 @@ describe JSONAPI::Serializer do
       post = create(:post, :with_author, long_comments: long_comments)
 
       expect(JSONAPI::Serializer.serialize(post, include: ['long-comments'])).to eq({
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
-          get_primary_data(long_comment, MyApp::LongCommentSerializer),
+          serialize_primary(long_comment, {serializer: MyApp::LongCommentSerializer}),
         ],
       })
     end
@@ -314,10 +308,10 @@ describe JSONAPI::Serializer do
       long_comments.each { |c| c.post = post }
 
       expect(JSONAPI::Serializer.serialize(post, include: ['long-comments'])).to eq({
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
-          get_primary_data(post.long_comments.first, MyApp::LongCommentSerializer),
-          get_primary_data(post.long_comments.last, MyApp::LongCommentSerializer),
+          serialize_primary(post.long_comments.first, {serializer: MyApp::LongCommentSerializer}),
+          serialize_primary(post.long_comments.last, {serializer: MyApp::LongCommentSerializer}),
         ],
       })
     end
@@ -333,10 +327,10 @@ describe JSONAPI::Serializer do
       long_comments.each { |c| c.post = post }
 
       expected_data = {
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
           # Only the author is included:
-          get_primary_data(post.author, MyApp::UserSerializer),
+          serialize_primary(post.author, {serializer: MyApp::UserSerializer}),
         ],
       }
 
@@ -358,10 +352,10 @@ describe JSONAPI::Serializer do
       long_comments.each { |c| c.post = post }
 
       expected_data = {
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
-          get_primary_data(first_user, MyApp::UserSerializer),
-          get_primary_data(second_user, MyApp::UserSerializer),
+          serialize_primary(first_user, {serializer: MyApp::UserSerializer}),
+          serialize_primary(second_user, {serializer: MyApp::UserSerializer}),
         ],
       }
       includes = ['long-comments.user']
@@ -380,11 +374,11 @@ describe JSONAPI::Serializer do
       long_comments.each { |c| c.post = post }
 
       expected_data = {
-        'data' => get_primary_data(post, MyApp::PostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
-          get_primary_data(long_comments.first, MyApp::LongCommentSerializer),
-          get_primary_data(long_comments.last, MyApp::LongCommentSerializer),
-          get_primary_data(post.author, MyApp::UserSerializer),
+          serialize_primary(long_comments.first, {serializer: MyApp::LongCommentSerializer}),
+          serialize_primary(long_comments.last, {serializer: MyApp::LongCommentSerializer}),
+          serialize_primary(post.author, {serializer: MyApp::UserSerializer}),
         ],
       }
       includes = ['long-comments', 'long-comments.post.author']
@@ -401,7 +395,7 @@ describe JSONAPI::Serializer do
     it 'delegates to module method but overrides serializer' do
       post = create(:post)
       expect(MyApp::SimplestPostSerializer.serialize(post)).to eq({
-        'data' => get_primary_data(post, MyApp::SimplestPostSerializer),
+        'data' => serialize_primary(post, {serializer: MyApp::SimplestPostSerializer}),
       })
     end
   end
