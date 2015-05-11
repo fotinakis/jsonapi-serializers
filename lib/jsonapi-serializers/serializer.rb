@@ -359,23 +359,27 @@ module JSONAPI
     #   }
     def self.parse_relationship_paths(paths)
       paths = paths.split(',') if paths.is_a?(String)
+      paths.uniq!
 
       relationships = {}
-      paths.each do |path|
-        path = path.to_s.strip
-        if !path.include?('.')
-          # Base case.
-          relationships[path] ||= {}
-          relationships[path].merge!({_include: true})
-        else
-          # Recurisive case.
-          first_level, rest = path.split('.', 2)
-          relationships[first_level] ||= {}
-          relationships[first_level].merge!(parse_relationship_paths([rest]))
-        end
-      end
+      paths.each { |path| merge_relationship_path(path, relationships) }
       relationships
     end
     class << self; protected :parse_relationship_paths; end
+
+    def self.merge_relationship_path(path, data)
+      parts = path.split('.', 2)
+      current_level = parts[0].strip
+      data[current_level] ||= {}
+
+      if parts.length == 1
+        # Leaf node.
+        data[current_level].merge!({_include: true})
+      elsif parts.length == 2
+        # Need to recurse more.
+        merge_relationship_path(parts[1], data[current_level])
+      end
+    end
+    class << self; protected :merge_relationship_path; end
   end
 end

@@ -407,87 +407,100 @@ describe JSONAPI::Serializer do
       expect(result).to eq({})
     end
     it 'correctly handles single-level relationship paths' do
-      result = JSONAPI::Serializer.send(:parse_relationship_paths, ['long-comments'])
+      result = JSONAPI::Serializer.send(:parse_relationship_paths, ['foo'])
       expect(result).to eq({
-        'long-comments' => {_include: true}
+        'foo' => {_include: true}
       })
     end
     it 'correctly handles multi-level relationship paths' do
-      result = JSONAPI::Serializer.send(:parse_relationship_paths, ['long-comments.user'])
+      result = JSONAPI::Serializer.send(:parse_relationship_paths, ['foo.bar'])
       expect(result).to eq({
-        'long-comments' => {'user' => {_include: true}}
+        'foo' => {'bar' => {_include: true}}
       })
     end
     it 'correctly handles multi-level relationship paths with same parent' do
-      paths = ['long-comments', 'long-comments.user']
+      paths = ['foo', 'foo.bar']
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
-        'long-comments' => {_include: true, 'user' => {_include: true}}
+        'foo' => {_include: true, 'bar' => {_include: true}}
       })
     end
-    it 'correctly handles mixed single and multi-level relationship paths' do
-      paths = ['author', 'long-comments', 'long-comments.post.author']
+    it 'correctly handles multi-level relationship paths with different parent' do
+      paths = ['foo', 'bar', 'bar.baz']
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
-        'author' => {_include: true},
-        'long-comments' => {_include: true, 'post' => {'author' => {_include: true}}},
+        'foo' => {_include: true},
+        'bar' => {_include: true, 'baz' => {_include: true}},
+      })
+    end
+    it 'correctly handles three-leveled path' do
+      paths = ['foo', 'foo.bar', 'foo.bar.baz']
+      result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
+      expect(result).to eq({
+        'foo' => {_include: true, 'bar' => {_include: true, 'baz' => {_include: true}}}
+      })
+    end
+    it 'correctly handles three-leveled path with skipped middle' do
+      paths = ['foo', 'foo.bar.baz']
+      result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
+      expect(result).to eq({
+        'foo' => {_include: true, 'bar' => {'baz' => {_include: true}}}
       })
     end
     it 'accepts and parses string arguments' do
-      paths = 'author, long-comments,long-comments.post.author'
+      paths = 'foo, bar,bar.baz.qux'
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
-        'author' => {_include: true},
-        'long-comments' => {_include: true, 'post' => {'author' => {_include: true}}},
+        'foo' => {_include: true},
+        'bar' => {_include: true, 'baz' => {'qux' => {_include: true}}},
       })
     end
+  end
+  describe 'if/unless handling with contexts' do
+    it 'can be used to show/hide attributes' do
+      post = create(:post)
+      options = {serializer: MyApp::PostSerializerWithContextHandling}
 
-    describe 'if/unless handling with contexts' do
-      it 'can be used to show/hide attributes' do
-        post = create(:post)
-        options = {serializer: MyApp::PostSerializerWithContextHandling}
+      options[:context] = {show_body: false}
+      data = JSONAPI::Serializer.serialize(post, options)
+      expect(data['data']['attributes']).to_not have_key('body')
 
-        options[:context] = {show_body: false}
-        data = JSONAPI::Serializer.serialize(post, options)
-        expect(data['data']['attributes']).to_not have_key('body')
+      options[:context] = {show_body: true}
+      data = JSONAPI::Serializer.serialize(post, options)
+      expect(data['data']['attributes']).to have_key('body')
+      expect(data['data']['attributes']['body']).to eq('Body for Post 1')
 
-        options[:context] = {show_body: true}
-        data = JSONAPI::Serializer.serialize(post, options)
-        expect(data['data']['attributes']).to have_key('body')
-        expect(data['data']['attributes']['body']).to eq('Body for Post 1')
+      options[:context] = {hide_body: true}
+      data = JSONAPI::Serializer.serialize(post, options)
+      expect(data['data']['attributes']).to_not have_key('body')
 
-        options[:context] = {hide_body: true}
-        data = JSONAPI::Serializer.serialize(post, options)
-        expect(data['data']['attributes']).to_not have_key('body')
+      options[:context] = {hide_body: false}
+      data = JSONAPI::Serializer.serialize(post, options)
+      expect(data['data']['attributes']).to have_key('body')
+      expect(data['data']['attributes']['body']).to eq('Body for Post 1')
 
-        options[:context] = {hide_body: false}
-        data = JSONAPI::Serializer.serialize(post, options)
-        expect(data['data']['attributes']).to have_key('body')
-        expect(data['data']['attributes']['body']).to eq('Body for Post 1')
+      options[:context] = {show_body: false, hide_body: false}
+      data = JSONAPI::Serializer.serialize(post, options)
+      expect(data['data']['attributes']).to_not have_key('body')
 
-        options[:context] = {show_body: false, hide_body: false}
-        data = JSONAPI::Serializer.serialize(post, options)
-        expect(data['data']['attributes']).to_not have_key('body')
+      options[:context] = {show_body: true, hide_body: false}
+      data = JSONAPI::Serializer.serialize(post, options)
+      expect(data['data']['attributes']).to have_key('body')
+      expect(data['data']['attributes']['body']).to eq('Body for Post 1')
 
-        options[:context] = {show_body: true, hide_body: false}
-        data = JSONAPI::Serializer.serialize(post, options)
-        expect(data['data']['attributes']).to have_key('body')
-        expect(data['data']['attributes']['body']).to eq('Body for Post 1')
+      # Remember: attribute is configured as if: show_body?, unless: hide_body?
+      # and the results should be logically AND'd together:
+      options[:context] = {show_body: false, hide_body: true}
+      data = JSONAPI::Serializer.serialize(post, options)
+      expect(data['data']['attributes']).to_not have_key('body')
 
-        # Remember: attribute is configured as if: show_body?, unless: hide_body?
-        # and the results should be logically AND'd together:
-        options[:context] = {show_body: false, hide_body: true}
-        data = JSONAPI::Serializer.serialize(post, options)
-        expect(data['data']['attributes']).to_not have_key('body')
-
-        options[:context] = {show_body: true, hide_body: true}
-        data = JSONAPI::Serializer.serialize(post, options)
-        expect(data['data']['attributes']).to_not have_key('body')
-      end
+      options[:context] = {show_body: true, hide_body: true}
+      data = JSONAPI::Serializer.serialize(post, options)
+      expect(data['data']['attributes']).to_not have_key('body')
     end
-    describe 'context' do
-      xit 'is correctly passed through all serializers' do
-      end
+  end
+  describe 'context' do
+    xit 'is correctly passed through all serializers' do
     end
   end
 end
