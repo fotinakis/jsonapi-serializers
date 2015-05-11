@@ -96,10 +96,14 @@ describe JSONAPI::Serializer do
         })
       end
     end
-    xcontext 'with linkage includes' do
+    context 'with linkage includes' do
       it 'can serialize primary data for a null to-one relationship' do
         post = create(:post, author: nil)
-        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
+        options = {
+          serializer: MyApp::PostSerializer,
+          include_linkages: ['author', 'long-comments'],
+        }
+        primary_data = serialize_primary(post, options)
         expect(primary_data).to eq({
           'id' => '1',
           'type' => 'posts',
@@ -127,7 +131,11 @@ describe JSONAPI::Serializer do
       end
       it 'can serialize primary data for a simple to-one relationship' do
         post = create(:post, :with_author)
-        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
+        options = {
+          serializer: MyApp::PostSerializer,
+          include_linkages: ['author', 'long-comments'],
+        }
+        primary_data = serialize_primary(post, options)
         expect(primary_data).to eq({
           'id' => '1',
           'type' => 'posts',
@@ -158,7 +166,11 @@ describe JSONAPI::Serializer do
       end
       it 'can serialize primary data for an empty to-many relationship' do
         post = create(:post, long_comments: [])
-        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
+        options = {
+          serializer: MyApp::PostSerializer,
+          include_linkages: ['author', 'long-comments'],
+        }
+        primary_data = serialize_primary(post, options)
         expect(primary_data).to eq({
           'id' => '1',
           'type' => 'posts',
@@ -187,7 +199,11 @@ describe JSONAPI::Serializer do
       it 'can serialize primary data for a simple to-many relationship' do
         long_comments = create_list(:long_comment, 2)
         post = create(:post, long_comments: long_comments)
-        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializer})
+        options = {
+          serializer: MyApp::PostSerializer,
+          include_linkages: ['author', 'long-comments'],
+        }
+        primary_data = serialize_primary(post, options)
         expect(primary_data).to eq({
           'id' => '1',
           'type' => 'posts',
