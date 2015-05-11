@@ -444,6 +444,33 @@ describe JSONAPI::Serializer do
       expect(actual_data['included']).to eq(expected_data['included'])
       expect(actual_data).to eq(expected_data)
     end
+    it 'includes linkage in compounded resources if their children were also included' do
+      comment_user = create(:user)
+      long_comments = [create(:long_comment, user: comment_user)]
+      post = create(:post, long_comments: long_comments)
+
+      expected_primary_data = serialize_primary(post, {
+        serializer: MyApp::PostSerializer,
+        include_linkages: ['long-comments'],
+      })
+      expected_data = {
+        'data' => expected_primary_data,
+        'included' => [
+          serialize_primary(long_comments.first, {
+            serializer: MyApp::LongCommentSerializer,
+            include_linkages: ['user'],
+          }),
+          serialize_primary(post.author, {serializer: MyApp::UserSerializer}),
+        ],
+      }
+      includes = ['long-comments', 'long-comments.user']
+      actual_data = JSONAPI::Serializer.serialize(post, include: includes)
+
+      # Multiple expectations for better diff output for debugging.
+      expect(actual_data['data']).to eq(expected_data['data'])
+      expect(actual_data['included']).to eq(expected_data['included'])
+      expect(actual_data).to eq(expected_data)
+    end
     it 'handles recursive loading of to-many relationships with overlapping include paths' do
       user = create(:user)
       long_comments = create_list(:long_comment, 2, user: user)
