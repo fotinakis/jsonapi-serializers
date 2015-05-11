@@ -447,7 +447,7 @@ describe JSONAPI::Serializer do
     it 'includes linkage in compounded resources if their children were also included' do
       comment_user = create(:user)
       long_comments = [create(:long_comment, user: comment_user)]
-      post = create(:post, long_comments: long_comments)
+      post = create(:post, :with_author, long_comments: long_comments)
 
       expected_primary_data = serialize_primary(post, {
         serializer: MyApp::PostSerializer,
@@ -460,7 +460,8 @@ describe JSONAPI::Serializer do
             serializer: MyApp::LongCommentSerializer,
             include_linkages: ['user'],
           }),
-          serialize_primary(post.author, {serializer: MyApp::UserSerializer}),
+          # Note: post.author does not show up here because it was not included.
+          serialize_primary(comment_user, {serializer: MyApp::UserSerializer}),
         ],
       }
       includes = ['long-comments', 'long-comments.user']

@@ -249,25 +249,58 @@ module JSONAPI
       if includes
         # Given all the primary objects (either the single root object or collection of objects),
         # recursively search and find objects that match the given include paths.
-        parsed_relationship_map = parse_relationship_paths(includes)
+        non_unique_results = []
+
+        inclusion_tree = parse_relationship_paths(includes)
         objects = options[:is_collection] ? objects.to_a : [objects]
-        included_objects = Set.new
+        serializers = []
         objects.compact.each do |obj|
-          included_objects.merge(find_recursive_relationships(obj, parsed_relationship_map))
+          relationship_tree = find_recursive_relationships(obj, inclusion_tree)
+          non_unique_results += serialize_relationship_tree(relationship_tree, inclusion_tree)
         end
-        result['included'] = included_objects.to_a.map do |obj|
-          # Determine the serializer class dynamically because each object might be different.
-          passthrough_options[:serializer] = find_serializer_class(obj)
 
-          passthrough_options[:include_linkages] =
-
-          serialize_primary(obj, passthrough_options)
+        result['included'] = non_unique_results.uniq do |serialized_obj|
+          [serialized_obj['id'], serialized_obj['type']]
         end
       end
       result
     end
 
     # ---
+
+    def self.serialize_relationship_tree(relationship_tree, inclusion_tree)
+      # Every objects in the relationships needs to be returned. However, we need to determine
+      # here if the relationship at this depth has any _children_ that are also included,
+      # so that we can make sure to include linkage information.
+      results = []
+
+      relationship_names = relationship_tree.keys.reject { |k| [:_objects].include?(k) }
+      relationship_names.each do |relationship_name|
+        current_include_linkage_names = []
+        if inclusion_tree[relationship_name]
+          inclusion_names = inclusion_tree[relationship_name].keys.reject { |k| k == :_include }
+          inclusion_names.each do |inclusion_name|
+            if inclusion_tree[relationship_name][:_include]
+              current_include_linkage_names << inclusion_name
+            end
+          end
+        end
+
+        objects_to_serialize = relationship_tree[relationship_name][:_objects] || []
+        objects_to_serialize.each do |obj|
+          # Determine the serializer class dynamically because each object might be different.
+          passthrough_options = {}
+          passthrough_options[:serializer] = find_serializer_class(obj)
+
+          # This is what all this work above was for. We know if a child of this object has also
+          # been included, so we can tell the serializer to include parent linkage information.
+          passthrough_options[:include_linkages] = current_include_linkage_names
+
+          results << serialize_primary(obj, passthrough_options)
+        end
+      end
+      results
+    end
 
     def self.serialize_primary(object, options = {})
       serializer_class = options.fetch(:serializer)
@@ -303,10 +336,22 @@ module JSONAPI
     end
     class << self; protected :serialize_primary_multi; end
 
-    # Recursively find object relationships and add them to the result set.
-    def self.find_recursive_relationships(root_object, parsed_relationship_map)
-      result_set = Set.new
-      parsed_relationship_map.each do |attribute_name, child_relationship_map|
+    # Recursively find object relationships and returns a tree of related objects.
+    # Example return:
+    # {
+    #   'long-comments' => {
+    #     _objects: [<LongComment>, ...],
+    #     'user' => {_objects: <User>},
+    #     'post' => {
+    #       _objects: <Post>,
+    #       'author' => <User>,
+    #       'long-comments' => {_objects: [<LongComment>, ...]}
+    #     },
+    #   },
+    # }
+    def self.find_recursive_relationships(root_object, root_inclusion_tree, relationship_tree = nil)
+      relationship_tree ||= {}
+      root_inclusion_tree.each do |attribute_name, child_inclusion_tree|
         # Skip the sentinal value, but we need to preserve it for siblings.
         next if attribute_name == :_include
 
@@ -318,7 +363,6 @@ module JSONAPI
         object = nil
         is_collection = false
         is_valid_attr = false
-
         if serializer.has_one_relationships.has_key?(unformatted_attr_name)
           is_valid_attr = true
           object = serializer.has_one_relationships[unformatted_attr_name]
@@ -341,22 +385,30 @@ module JSONAPI
         # wants to fetch the associated authors without fetching the comments again.
         # http://jsonapi.org/format/#fetching-includes
         objects = is_collection ? object : [object]
-        if child_relationship_map[:_include] == true
+        relationship_tree[attribute_name] = {}
+        if child_inclusion_tree[:_include] == true
           # Include the current level objects if the attribute exists.
-          objects.each do |obj|
-            result_set << obj
+          if is_collection
+            objects.each do |obj|
+              relationship_tree[attribute_name][:_objects] ||= []
+              relationship_tree[attribute_name][:_objects] << obj
+            end
+          else
+            relationship_tree[attribute_name][:_objects] = [object]
           end
         end
 
         # Recurse deeper!
-        if !child_relationship_map.empty?
+        if !child_inclusion_tree.empty?
           # For each object we just loaded, find all deeper recursive relationships.
           objects.each do |obj|
-            result_set.merge(find_recursive_relationships(obj, child_relationship_map))
+            # Use relationship_tree mutability as the return structure.
+            find_recursive_relationships(
+              obj, child_inclusion_tree, relationship_tree[attribute_name])
           end
         end
       end
-      result_set
+      relationship_tree
     end
     class << self; protected :find_recursive_relationships; end
 
