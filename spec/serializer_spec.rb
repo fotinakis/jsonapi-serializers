@@ -213,10 +213,15 @@ describe JSONAPI::Serializer do
     # primary data is not explicitly tested here. If things are broken, look above here first.
 
     it 'can serialize a nil object' do
-     expect(JSONAPI::Serializer.serialize(nil)).to eq({'data' => nil})
+      expect(JSONAPI::Serializer.serialize(nil)).to eq({'data' => nil})
+    end
+    it 'can serialize a nil object with includes' do
+      data = JSONAPI::Serializer.serialize(nil, include: ['fake'])
+      expect(data).to eq({'data' => nil, 'included' => []})
     end
     it 'can serialize an empty array' do
-     expect(JSONAPI::Serializer.serialize([], is_collection: true)).to eq({'data' => []})
+      data = JSONAPI::Serializer.serialize([], is_collection: true, include: ['fake'])
+      expect(data).to eq({'data' => [], 'included' => []})
     end
     it 'can serialize a simple object' do
       post = create(:post)

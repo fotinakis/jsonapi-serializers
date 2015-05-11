@@ -225,7 +225,7 @@ module JSONAPI
         # recursively search and find objects that match the given include paths.
         objects = options[:is_collection] ? objects : [objects]
         included_objects = Set.new
-        objects.each do |obj|
+        objects.compact.each do |obj|
           included_objects.merge(find_recursive_relationships(obj, parsed_relationship_map))
         end
         result['included'] = included_objects.to_a.map do |obj|
