@@ -398,10 +398,12 @@ describe JSONAPI::Serializer do
         # forcing clients to still have to request linkage from long-comments and post. This is an
         # odd but valid data state because the user requested to only include the leaf author node,
         # and we only automatically expose direct children linkages if they match given includes.
-        # This is our interpretation of when primary data linkage should be automatically loaded
-        # when requesting includes, as this is not specifically defined in the spec.
         #
-        # Related to spec note: A request for comments.author should not automatically also include
+        # Spec: Resource linkage in a compound document allows a client to link together
+        # all of the included resource objects without having to GET any relationship URLs.
+        # http://jsonapi.org/format/#document-structure-resource-relationships
+        #
+        # Also, spec: A request for comments.author should not automatically also include
         # comments in the response. This can happen if the client already has the comments locally,
         # and now wants to fetch the associated authors without fetching the comments again.
         # http://jsonapi.org/format/#fetching-includes
@@ -444,7 +446,7 @@ describe JSONAPI::Serializer do
       expect(actual_data['included']).to eq(expected_data['included'])
       expect(actual_data).to eq(expected_data)
     end
-    it 'includes linkage in compounded resources if their children were also included' do
+    it 'includes linkage in compounded resources only if the immediate parent was also included' do
       comment_user = create(:user)
       long_comments = [create(:long_comment, user: comment_user)]
       post = create(:post, :with_author, long_comments: long_comments)
@@ -502,7 +504,7 @@ describe JSONAPI::Serializer do
     end
 
     context 'on collection' do
-      it 'handles include of to-many relationships with compound document' do
+      it 'handles include of has_many relationships with compound document' do
         long_comments = create_list(:long_comment, 2)
         posts = create_list(:post, 2, :with_author, long_comments: long_comments)
 
