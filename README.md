@@ -2,17 +2,31 @@
 
 JSONAPI::Serializers is a simple library for serializing Ruby objects and their relationships into the [JSON:API format](http://jsonapi.org/format/).
 
-Note: as of writing, the JSON:API spec has not reached v1 and is still undergoing changes. This library supports RC3+ and aims to keep up with the continuing development changes.
+As of writing, the JSON:API spec is approaching v1 and still undergoing changes. This library supports RC3+ and aims to keep up with the continuing development changes.
+
+* [Features](#features)
+* [Installation](#installation)
+* [Usage](#usage)
+  * [Define a serializer](#define-a-serializer)
+  * [Serialize an object](#serialize-an-object)
+  * [Serialize a collection](#serialize-a-collection)
+  * [Null handling](#null-handling)
+  * [Custom attributes](#custom-attributes)
+* [Relationships](#relationships)
+  * [Compound documents and includes](#compound-documents-and-includes)
+  * [Relationship path handling](#relationship-path-handling)
+* [Unfinished business](#unfinished-business)
+* [Contributing](#contributing)
 
 ## Features
 
 * Works with **any Ruby web framework**, including Rails, Sinatra, etc. This is a pure Ruby library.
 * Supports the readonly features of the JSON:API spec.
-  * **Full support for compound documents** ("side-loaded" objects) and the `include` parameter.
+  * **Full support for compound documents** ("side-loading") and the `include` parameter.
 * Similar interface to ActiveModel::Serializers, should provide an easy migration path.
-* Intentionally unopinionated, allows you to structure your app however you would like and then serialize the objects at the end.
+* Intentionally unopinionated and simple, allows you to structure your app however you would like and then serialize the objects at the end.
 
-JSONAPI::Serializers was built as an intentionally simple serialization interface. It makes no assumptions about your database structure or routes and it does not provide controllers or any create/update interface to your objects. It is a library, not a framework. You will probably still need to do work to make your API fully compliant with the nuances of the [JSON:API spec](http://jsonapi.org/format/), for things like supporting `/links` routes and of course for implementing any mutation action like PATCH or creating objects. If you are looking for a more complete and opinionated framework, see the [jsonapi-resources](https://github.com/cerebris/jsonapi-resources) project.
+JSONAPI::Serializers was built as an intentionally simple serialization interface. It makes no assumptions about your database structure or routes and it does not provide controllers or any create/update interface to the objects. It is a library, not a framework. You will probably still need to do work to make your API fully compliant with the nuances of the [JSON:API spec](http://jsonapi.org/format/), for things like supporting `/links` routes and for supporting write actions like creating or updating objects. If you are looking for a more complete and opinionated framework, see the [jsonapi-resources](https://github.com/cerebris/jsonapi-resources) project.
 
 Note: still under development, doesn't currently support certain readonly things like `fields`, but I'd like to.
 
@@ -142,7 +156,7 @@ By default the serializer looks for the same name of the attribute on the object
 
 The block is evaluated within the serializer instance, so it has access to the `object` and `context` instance variables.
 
-### Relationships
+## Relationships
 
 You can easily specify relationships with the `has_one` and `has_many` directives.
 
@@ -174,9 +188,10 @@ Note that when serializing a post, the `author` association will come from the `
 
 Because the full class name is used when discovering serializers, JSONAPI::Serializers works with any custom namespaces you might have, like a Rails Engine or standard Ruby module namespace.
 
-### Serialize compound documents
+### Compound documents and includes
 
-> To reduce the number of HTTP requests, servers MAY allow responses that include related resources along with the requested primary resources. Such responses are called "compound documents". [JSON:API Compound Documents](http://jsonapi.org/format/#document-structure-compound-documents)
+> To reduce the number of HTTP requests, servers MAY allow responses that include related resources along with the requested primary resources. Such responses are called "compound documents".
+> [JSON:API Compound Documents](http://jsonapi.org/format/#document-structure-compound-documents)
 
 JSONAPI::Serializers supports compound documents with a simple `include` parameter.
 
@@ -262,7 +277,24 @@ Returns:
 }
 ```
 
-The `include` param also accepts a string of [relationship paths](http://jsonapi.org/format/#fetching-includes), ie. `include: 'author,comments,comments.user'` so you can pass an `?include` query param directly in. Be aware that letting users pass arbitrary relationship paths might introduce security issues depending on your authorization setup, where a user could `include` a relationship they might not be authorized to see directly. Be aware of what you allow API users to include.
+Notice a few things:
+* The [primary data](http://jsonapi.org/format/#document-structure-top-level) now includes "linkage" information for each relationship that was included.
+* The related objects themselves are loaded in the top-level `included` member.
+* The related objects _also_ include "linkage" information when a deeper relationship is also present in the compound document. This is a very powerful feature of the JSON:API spec, and allows you to deeply link complicated relationships all in the same document and in a single HTTP response. JSONAPI::Serializers automatically includes the correct linkage information for whatever `include` paths you specify. This conforms to this part of the spec:
+    
+  > Note: Resource linkage in a compound document allows a client to link together all of the included resource objects without having to GET any relationship URLs.
+  > [JSON:API Resource Relationships](http://jsonapi.org/format/#document-structure-resource-relationships)
+
+#### Relationship path handling
+ 
+The `include` param also accepts a string of [relationship paths](http://jsonapi.org/format/#fetching-includes), ie. `include: 'author,comments,comments.user'` so you can pass an `?include` query param directly through to the serialize method. Be aware that letting users pass arbitrary relationship paths might introduce security issues depending on your authorization setup, where a user could `include` a relationship they might not be authorized to see directly. Be aware of what you allow API users to include.
+
+## Unfinished business
+
+* Support for passing `context` through to serializers is partially complete, but needs more work.
+* Support for a `serializer_class` attribute on objects that overrides serializer discovery, would love a PR contribution for this.
+* Support for the `fields` spec is planned, would love a PR contribution for this.
+* Support for pagination/sorting is unlikely to be supported because it would likely involve coupling to ActiveRecord, but please open an issue if you have ideas of how to support this generically.
 
 ## Contributing
 
