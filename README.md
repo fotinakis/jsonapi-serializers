@@ -101,9 +101,9 @@ Returns:
 }
 ```
 
-### Null handling
+You must always pass `is_collection: true` when serializing a collection, see [Null handling](#null-handling).
 
-Note that the JSON:API spec distinguishes in how null/empty is handled for single objects vs. collections, so you must always provide `is_collection: true` when serializing multiple objects. If you attempt to serialize multiple objects without this flag (or a single object with it on) a `JSONAPI::Serializer::AmbiguousCollectionError` will be raised.
+### Null handling
 
 ```ruby
 JSONAPI::Serializer.serialize(nil)
@@ -128,11 +128,7 @@ Returns:
 }
 ```
 
-
-```ruby
-JSONAPI::Serializer.serialize([], is_collection: true)
-```
-
+Note that the JSON:API spec distinguishes in how null/empty is handled for single objects vs. collections, so you must always provide `is_collection: true` when serializing multiple objects. If you attempt to serialize multiple objects without this flag (or a single object with it on) a `JSONAPI::Serializer::AmbiguousCollectionError` will be raised.
 
 ### Custom attributes
 
