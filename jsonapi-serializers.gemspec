@@ -5,7 +5,7 @@ require 'jsonapi-serializers/version'
 
 Gem::Specification.new do |spec|
   spec.name          = "jsonapi-serializers"
-  spec.version       = JSONAPI::Serializers::VERSION
+  spec.version       = JSONAPI::Serializer::VERSION
   spec.authors       = ["Mike Fotinakis"]
   spec.email         = ["mike@fotinakis.com"]
   spec.summary       = %q{Pure Ruby serializers conforming to the JSON:API spec.}

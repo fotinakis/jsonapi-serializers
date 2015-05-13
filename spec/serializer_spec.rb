@@ -275,7 +275,7 @@ describe JSONAPI::Serializer do
     end
     it 'raises AmbiguousCollectionError if is_collection is not passed' do
       posts = create_list(:post, 2)
-      error = JSONAPI::Serializers::AmbiguousCollectionError
+      error = JSONAPI::Serializer::AmbiguousCollectionError
       expect { JSONAPI::Serializer.serialize(posts) }.to raise_error(error)
     end
     it 'can serialize a nil object when given serializer' do

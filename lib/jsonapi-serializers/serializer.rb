@@ -207,7 +207,7 @@ module JSONAPI
       }
 
       if options[:is_collection] && !objects.respond_to?(:each)
-        raise JSONAPI::Serializers::AmbiguousCollectionError.new(
+        raise JSONAPI::Serializer::AmbiguousCollectionError.new(
           'Attempted to serialize a single object as a collection.')
       end
 
@@ -234,7 +234,7 @@ module JSONAPI
         # We always must be told if serializing a collection because the JSON:API spec distinguishes
         # how to serialize null single resources vs. empty collections.
         if objects.respond_to?(:each)
-          raise JSONAPI::Serializers::AmbiguousCollectionError.new(
+          raise JSONAPI::Serializer::AmbiguousCollectionError.new(
             'Must provide `is_collection: true` to `serialize` when serializing collections.')
         end
         # Have single object.
@@ -333,7 +333,7 @@ module JSONAPI
           object = serializer.has_many_relationships[unformatted_attr_name]
         end
         if !is_valid_attr
-          raise JSONAPI::Serializers::InvalidIncludeError.new(
+          raise JSONAPI::Serializer::InvalidIncludeError.new(
             "'#{attribute_name}' is not a valid include.")
         end
 
