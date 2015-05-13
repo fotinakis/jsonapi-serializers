@@ -291,6 +291,57 @@ The `include` param also accepts a string of [relationship paths](http://jsonapi
 ## Rails example
 
 ```ruby
+# app/serializers/base_serializer.rb
+class BaseSerializer
+  include JSONAPI::Serializer
+
+  def self_link
+    "/api/v1#{super}"
+  end
+end
+
+# app/serializers/post_serializer.rb
+class PostSerializer < BaseSerializer
+  attribute :title
+  attribute :content
+end
+
+# app/controllers/api/v1/base_controller.rb
+class Api::V1::BaseController < ActionController::Base
+  # Convenience methods for serializing models:
+  def serialize_model(model, options = {})
+    options[:is_collection] = false
+    JSONAPI::Serializer.serialize(model, options)
+  end
+
+  def serialize_models(models, options = {})
+    options[:is_collection] = true
+    JSONAPI::Serializer.serialize(models, options)
+  end
+end
+
+# app/controllers/api/v1/posts_controller.rb
+class Api::V1::ReposController < Api::V1::BaseController
+  def index
+    posts = Post.all
+    render json: serialize_models(posts)
+  end
+
+  def show
+    post = Post.find(params[:id])
+    render json: serialize_model(post)
+  end
+end
+
+# lib/jsonapi_mimetypes.rb
+# Without this mimetype registration, controllers will not automatically parse JSON API params.
+module JSONAPI
+  MIMETYPE = "application/vnd.api+json"
+end
+Mime::Type.register(JSONAPI::MIMETYPE, :api_json)
+ActionDispatch::ParamsParser::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MIMETYPE)] = lambda do |body|
+  JSON.parse(body)
+end
 ```
 
 ## Unfinished business
