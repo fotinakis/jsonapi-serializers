@@ -170,7 +170,7 @@ class CommentSerializer < BaseSerializer
 end
 ```
 
-Note that when serializing a post, the `author` association will come from the `author` attribute on the `Post` instance, no matter what type it is (in this case it is a `User`). This will work just fine, because JSONAPI::Serializers automatically finds serializer classes by appending `Serializer` to the object's class name (this can be customized).
+Note that when serializing a post, the `author` association will come from the `author` attribute on the `Post` instance, no matter what type it is (in this case it is a `User`). This will work just fine, because JSONAPI::Serializers automatically finds serializer classes by appending `Serializer` to the object's class name. This behavior can be customized.
 
 Because the full class name is used when discovering serializers, JSONAPI::Serializers works with any custom namespaces you might have, like a Rails Engine or standard Ruby module namespace.
 
