@@ -28,8 +28,6 @@ As of writing, the JSON:API spec is approaching v1 and still undergoing changes.
 
 JSONAPI::Serializers was built as an intentionally simple serialization interface. It makes no assumptions about your database structure or routes and it does not provide controllers or any create/update interface to the objects. It is a library, not a framework. You will probably still need to do work to make your API fully compliant with the nuances of the [JSON:API spec](http://jsonapi.org/format/), for things like supporting `/links` routes and for supporting write actions like creating or updating objects. If you are looking for a more complete and opinionated framework, see the [jsonapi-resources](https://github.com/cerebris/jsonapi-resources) project.
 
-Note: still under development, doesn't currently support certain readonly things like `fields`, but I'd like to.
-
 ## Installation
 
 Add this line to your application's Gemfile:
