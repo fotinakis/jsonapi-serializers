@@ -1,5 +1,9 @@
 # JSONAPI::Serializers
 
+[![Build Status](https://travis-ci.org/fotinakis/jsonapi-serializers.svg?branch=master)](https://travis-ci.org/fotinakis/jsonapi-serializers)
+[![Gem Version](https://badge.fury.io/rb/jsonapi-serializers.svg)](http://badge.fury.io/rb/jsonapi-serializers)
+
+
 JSONAPI::Serializers is a simple library for serializing Ruby objects and their relationships into the [JSON:API format](http://jsonapi.org/format/).
 
 As of writing, the JSON:API spec is approaching v1 and still undergoing changes. This library supports RC3+ and aims to keep up with the continuing development changes.
