@@ -15,6 +15,7 @@ As of writing, the JSON:API spec is approaching v1 and still undergoing changes.
 * [Relationships](#relationships)
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
+* [Rails example](#rails-example)
 * [Unfinished business](#unfinished-business)
 * [Contributing](#contributing)
 
@@ -286,6 +287,11 @@ Notice a few things:
 #### Relationship path handling
  
 The `include` param also accepts a string of [relationship paths](http://jsonapi.org/format/#fetching-includes), ie. `include: 'author,comments,comments.user'` so you can pass an `?include` query param directly through to the serialize method. Be aware that letting users pass arbitrary relationship paths might introduce security issues depending on your authorization setup, where a user could `include` a relationship they might not be authorized to see directly. Be aware of what you allow API users to include.
+
+## Rails example
+
+```ruby
+```
 
 ## Unfinished business
 
