@@ -33,24 +33,35 @@ module JSONAPI
         @_include_linkages = options[:include_linkages] || []
       end
 
-      # Override this method to customize how the ID is set.
+      # Override this to customize the JSON:API "id" for this object.
       # Always return a string from this method to conform with the JSON:API spec.
       def id
         object.id.to_s
       end
 
-      # Override this method to customize the type name.
+      # Override this to customize the JSON:API "type" for this object.
+      # By default, the type is the object's class name lowercased, pluralized, and dasherized,
+      # per the spec naming recommendations: http://jsonapi.org/recommendations/#naming
+      # For example, 'MyApp::LongCommment' will become the 'long-comments' type.
       def type
         object.class.name.demodulize.tableize.dasherize
       end
 
-      # By JSON:API spec convention, attribute names are dasherized. Override this to customize.
+      # Override this to customize how attribute names are formatted.
+      # By default, attribute names are dasherized per the spec naming recommendations:
+      # http://jsonapi.org/recommendations/#naming
       def format_name(attribute_name)
         attribute_name.to_s.dasherize
       end
 
+      # The opposite of format_name. Override this if you override format_name.
       def unformat_name(attribute_name)
         attribute_name.to_s.underscore
+      end
+
+      # Override this to provide resource-object metadata.
+      # http://jsonapi.org/format/#document-structure-resource-objects
+      def meta
       end
 
       def self_link
@@ -63,10 +74,6 @@ module JSONAPI
 
       def relationship_related_link(attribute_name)
         "#{self_link}/#{format_name(attribute_name)}"
-      end
-
-      # Override to provide resource-object-level meta data.
-      def meta
       end
 
       def links
