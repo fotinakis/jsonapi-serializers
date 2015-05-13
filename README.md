@@ -12,6 +12,7 @@ As of writing, the JSON:API spec is approaching v1 and still undergoing changes.
   * [Serialize a collection](#serialize-a-collection)
   * [Null handling](#null-handling)
   * [Custom attributes](#custom-attributes)
+  * [More customizations[(#more-customizations)
 * [Relationships](#relationships)
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
@@ -154,6 +155,11 @@ By default the serializer looks for the same name of the attribute on the object
 ```
 
 The block is evaluated within the serializer instance, so it has access to the `object` and `context` instance variables.
+
+### More customizations
+
+```ruby
+```
 
 ## Relationships
 
