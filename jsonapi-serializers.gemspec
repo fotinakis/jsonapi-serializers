@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = JSONAPI::Serializer::VERSION
   spec.authors       = ["Mike Fotinakis"]
   spec.email         = ["mike@fotinakis.com"]
-  spec.summary       = %q{Pure Ruby serializers conforming to the JSON:API spec.}
+  spec.summary       = %q{Pure Ruby readonly serializers for the JSON:API spec.}
   spec.description   = %q{}
   spec.homepage      = ""
   spec.license       = "MIT"
