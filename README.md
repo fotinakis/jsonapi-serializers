@@ -165,55 +165,55 @@ The block is evaluated within the serializer instance, so it has access to the `
 Many other formatting and customizations are possible by overriding any of the following instance methods on your serializers.
 
 ```ruby
-  # Override this to customize the JSON:API "id" for this object.
-  # Always return a string from this method to conform with the JSON:API spec.
-  def id
-    object.id.to_s
-  end
+# Override this to customize the JSON:API "id" for this object.
+# Always return a string from this method to conform with the JSON:API spec.
+def id
+  object.id.to_s
+end
 ```
 ```ruby
-  # Override this to customize the JSON:API "type" for this object.
-  # By default, the type is the object's class name lowercased, pluralized, and dasherized,
-  # per the spec naming recommendations: http://jsonapi.org/recommendations/#naming
-  # For example, 'MyApp::LongCommment' will become the 'long-comments' type.
-  def type
-    object.class.name.demodulize.tableize.dasherize
-  end
+# Override this to customize the JSON:API "type" for this object.
+# By default, the type is the object's class name lowercased, pluralized, and dasherized,
+# per the spec naming recommendations: http://jsonapi.org/recommendations/#naming
+# For example, 'MyApp::LongCommment' will become the 'long-comments' type.
+def type
+  object.class.name.demodulize.tableize.dasherize
+end
 ```
 ```ruby
-  # Override this to customize how attribute names are formatted.
-  # By default, attribute names are dasherized per the spec naming recommendations:
-  # http://jsonapi.org/recommendations/#naming
-  def format_name(attribute_name)
-    attribute_name.to_s.dasherize
-  end
+# Override this to customize how attribute names are formatted.
+# By default, attribute names are dasherized per the spec naming recommendations:
+# http://jsonapi.org/recommendations/#naming
+def format_name(attribute_name)
+  attribute_name.to_s.dasherize
+end
 ```
 ```ruby
-  # The opposite of format_name. Override this if you override format_name.
-  def unformat_name(attribute_name)
-    attribute_name.to_s.underscore
-  end
+# The opposite of format_name. Override this if you override format_name.
+def unformat_name(attribute_name)
+  attribute_name.to_s.underscore
+end
 ```
 ```ruby
-  # Override this to provide resource-object metadata.
-  # http://jsonapi.org/format/#document-structure-resource-objects
-  def meta
-  end
+# Override this to provide resource-object metadata.
+# http://jsonapi.org/format/#document-structure-resource-objects
+def meta
+end
 ```
 ```ruby
-  def self_link
-    "/#{type}/#{id}"
-  end
+def self_link
+  "/#{type}/#{id}"
+end
 ```
 ```ruby
-  def relationship_self_link(attribute_name)
-    "#{self_link}/links/#{format_name(attribute_name)}"
-  end
+def relationship_self_link(attribute_name)
+  "#{self_link}/links/#{format_name(attribute_name)}"
+end
 ```
 ```ruby
-  def relationship_related_link(attribute_name)
-    "#{self_link}/#{format_name(attribute_name)}"
-  end
+def relationship_related_link(attribute_name)
+  "#{self_link}/#{format_name(attribute_name)}"
+end
 ```
 
 ## Relationships
