@@ -47,11 +47,67 @@ end
 JSONAPI::Serializer.serialize(post)
 ```
 
-Will produce:
-```
+Returns a hash:
+```json
+{
+  "data": {
+    "id": "1",
+    "type": "posts",
+    "attributes": {
+      "title": "Hello World",
+      "body": "Your first post"
+    },
+    "links": {
+      "self": "/posts/1"
+    }
+  }
+}
 ```
 
 ### Serialize multiple objects
+
+```ruby
+JSONAPI::Serializer.serialize(posts, is_collection: true)
+```
+
+Returns:
+
+```json
+{
+  "data": [
+    {
+      "id": "1",
+      "type": "posts",
+      "attributes": {
+        "title": "Hello World",
+        "body": "Your first post"
+      },
+      "links": {
+        "self": "/posts/1"
+      }
+    },
+    {
+      "id": "2",
+      "type": "posts",
+      "attributes": {
+        "title": "Hello World again",
+        "body": "Your second post"
+      },
+      "links": {
+        "self": "/posts/2"
+      }
+    }
+  ]
+}
+```
+
+> Note: the JSON:API spec makes a specific distinction in how null `linkage` information is presented for single objects vs. collections, so you must always provide `is_collection: true` when serializing multiple objects. If you attempt to serialize multiple objects without this flag (or a single object with it) a `JSONAPI::Serializer::AmbiguousCollectionError` will be raised.
+
+### Serialize compound documents
+
+> To reduce the number of HTTP requests, servers MAY allow responses that include related resources along with the requested primary resources. Such responses are called "compound documents". [JSON:API Compound Documents](http://jsonapi.org/format/#document-structure-compound-documents)
+
+...
 
 ## Contributing
 
