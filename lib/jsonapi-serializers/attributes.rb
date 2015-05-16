@@ -17,12 +17,12 @@ module JSONAPI
         add_attribute(name, options, &block)
       end
 
-      def has_one(name, options = {})
-        add_to_one_association(name, options)
+      def has_one(name, options = {}, &block)
+        add_to_one_association(name, options, &block)
       end
 
-      def has_many(name, options = {})
-        add_to_many_association(name, options)
+      def has_many(name, options = {}, &block)
+        add_to_many_association(name, options, &block)
       end
 
       def add_attribute(name, options = {}, &block)
