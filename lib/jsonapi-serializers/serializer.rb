@@ -79,7 +79,10 @@ module JSONAPI
       def links
         data = {}
         data.merge!({'self' => self_link}) if self_link
+      end
 
+      def relationships
+        data = {}
         # Merge in data for has_one relationships.
         has_one_relationships.each do |attribute_name, object|
           formatted_attribute_name = format_name(attribute_name)
@@ -260,7 +263,6 @@ module JSONAPI
         # Given all the primary objects (either the single root object or collection of objects),
         # recursively search and find related associations that were specified as includes.
         objects = options[:is_collection] ? objects.to_a : [objects]
-        serializers = []
         objects.compact.each do |obj|
           # Use the mutability of relationship_data as the return datastructure to take advantage
           # of the internal special merging logic.
@@ -296,6 +298,7 @@ module JSONAPI
       # http://jsonapi.org/format/#document-structure-resource-objects
       data.merge!({'attributes' => serializer.attributes}) if !serializer.attributes.nil?
       data.merge!({'links' => serializer.links}) if !serializer.links.nil?
+      data.merge!({'relationships' => serializer.relationships}) if !serializer.relationships.nil?
       data.merge!({'meta' => serializer.meta}) if !serializer.meta.nil?
       data
     end
