@@ -25,6 +25,7 @@ describe JSONAPI::Serializer do
         'links' => {
           'self' => '/posts/1',
         },
+        'relationships' => {},
       })
     end
     it 'can serialize primary data for a simple object with a long name' do
@@ -38,6 +39,8 @@ describe JSONAPI::Serializer do
         },
         'links' => {
           'self' => '/long-comments/1',
+        },
+        'relationships' => {
           'user' => {
             'self' => '/long-comments/1/links/user',
             'related' => '/long-comments/1/user',
@@ -62,6 +65,7 @@ describe JSONAPI::Serializer do
         'links' => {
           'self' => '/posts/1',
         },
+        'relationships' => {},
         'meta' => {
           'copyright' => 'Copyright 2015 Example Corp.',
           'authors' => [
@@ -83,6 +87,8 @@ describe JSONAPI::Serializer do
           },
           'links' => {
             'self' => '/posts/1',
+          },
+          'relationships' => {
             # Both to-one and to-many links are present, but neither include linkage:
             'author' => {
               'self' => '/posts/1/links/author',
@@ -113,6 +119,8 @@ describe JSONAPI::Serializer do
           },
           'links' => {
             'self' => '/posts/1',
+          },
+          'relationships' => {
             'author' => {
               'self' => '/posts/1/links/author',
               'related' => '/posts/1/author',
@@ -145,6 +153,8 @@ describe JSONAPI::Serializer do
           },
           'links' => {
             'self' => '/posts/1',
+          },
+          'relationships' => {
             'author' => {
               'self' => '/posts/1/links/author',
               'related' => '/posts/1/author',
@@ -180,6 +190,8 @@ describe JSONAPI::Serializer do
           },
           'links' => {
             'self' => '/posts/1',
+          },
+          'relationships' => {
             'author' => {
               'self' => '/posts/1/links/author',
               'related' => '/posts/1/author',
@@ -213,6 +225,8 @@ describe JSONAPI::Serializer do
           },
           'links' => {
             'self' => '/posts/1',
+          },
+          'relationships' => {
             'author' => {
               'self' => '/posts/1/links/author',
               'related' => '/posts/1/author',
@@ -414,7 +428,7 @@ describe JSONAPI::Serializer do
         ],
       }
       includes = ['long-comments.post.author']
-      actual_data = JSONAPI::Serializer.serialize(post, include: ['long-comments.post.author'])
+      actual_data = JSONAPI::Serializer.serialize(post, include: includes)
       # Multiple expectations for better diff output for debugging.
       expect(actual_data['data']).to eq(expected_data['data'])
       expect(actual_data['included']).to eq(expected_data['included'])
