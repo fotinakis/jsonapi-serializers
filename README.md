@@ -77,7 +77,8 @@ Returns a hash:
     },
     "links": {
       "self": "/posts/1"
-    }
+    },
+    "relationships": {}
   }
 }
 ```
@@ -102,7 +103,8 @@ Returns:
       },
       "links": {
         "self": "/posts/1"
-      }
+      },
+      "relationships": {}
     },
     {
       "id": "2",
@@ -113,7 +115,8 @@ Returns:
       },
       "links": {
         "self": "/posts/2"
-      }
+      },
+      "relationships": {}
     }
   ]
 }
@@ -264,7 +267,7 @@ JSONAPI::Serializer.serialize(post, include: ['author', 'comments', 'comments.us
 Returns:
 
 ```json
-
+{
   "data": {
     "id": "1",
     "type": "posts",
@@ -273,7 +276,9 @@ Returns:
       "content": "Your first post"
     },
     "links": {
-      "self": "/posts/1",
+      "self": "/posts/1"
+    },
+    "relationships": {
       "author": {
         "self": "/posts/1/links/author",
         "related": "/posts/1/author",
@@ -303,7 +308,8 @@ Returns:
       },
       "links": {
         "self": "/users/1"
-      }
+      },
+      "relationships": {}
     },
     {
       "id": "1",
@@ -312,7 +318,9 @@ Returns:
         "content": "Have no fear, sers, your king is safe."
       },
       "links": {
-        "self": "/comments/1",
+        "self": "/comments/1"
+      },
+      "relationships": {
         "user": {
           "self": "/comments/1/links/user",
           "related": "/comments/1/user",
@@ -320,6 +328,10 @@ Returns:
             "type": "users",
             "id": "2"
           }
+        },
+        "post": {
+          "self": "/comments/1/links/post",
+          "related": "/comments/1/post"
         }
       }
     },
@@ -331,19 +343,20 @@ Returns:
       },
       "links": {
         "self": "/users/2"
-      }
+      },
+      "relationships": {}
     }
   ]
 }
 ```
 
 Notice a few things:
-* The [primary data](http://jsonapi.org/format/#document-structure-top-level) now includes "linkage" information for each relationship that was included.
+* The [primary data](http://jsonapi.org/format/#document-structure-top-level) relationships now include "linkage" information for each relationship that was included.
 * The related objects themselves are loaded in the top-level `included` member.
 * The related objects _also_ include "linkage" information when a deeper relationship is also present in the compound document. This is a very powerful feature of the JSON:API spec, and allows you to deeply link complicated relationships all in the same document and in a single HTTP response. JSONAPI::Serializers automatically includes the correct linkage information for whatever `include` paths you specify. This conforms to this part of the spec:
     
-  > Note: Resource linkage in a compound document allows a client to link together all of the included resource objects without having to GET any relationship URLs.
-  > [JSON:API Resource Relationships](http://jsonapi.org/format/#document-structure-resource-relationships)
+  > Note: Full linkage ensures that included resources are related to either the primary data (which could be resource objects or resource identifier objects) or to each other.
+  > [JSON:API Compound Documents](http://jsonapi.org/format/#document-structure-compound-documents)
 
 #### Relationship path handling
  
