@@ -280,7 +280,7 @@ Returns:
     "relationships": {
       "author": {
         "links": {
-          "self": "/posts/1/links/author",
+          "self": "/posts/1/relationships/author",
           "related": "/posts/1/author"
         },
         "data": {
@@ -290,7 +290,7 @@ Returns:
       },
       "comments": {
         "links": {
-          "self": "/posts/1/links/comments",
+          "self": "/posts/1/relationships/comments",
           "related": "/posts/1/comments"
         },
         "data": [
@@ -326,7 +326,7 @@ Returns:
       "relationships": {
         "user": {
           "links": {
-            "self": "/comments/1/links/user",
+            "self": "/comments/1/relationships/user",
             "related": "/comments/1/user"
           },
           "data": {
@@ -336,7 +336,7 @@ Returns:
         },
         "post": {
           "links": {
-            "self": "/comments/1/links/post",
+            "self": "/comments/1/relationships/post",
             "related": "/comments/1/post"
           }
         }
@@ -434,6 +434,7 @@ end
 
 ## Release notes
 
+* v0.2.1: Compliance fix for self links.
 * v0.2.0: Initial release with support for the final v1 JSON API spec.
 
 ## Contributing
