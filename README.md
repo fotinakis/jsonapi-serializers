@@ -3,10 +3,9 @@
 [![Build Status](https://travis-ci.org/fotinakis/jsonapi-serializers.svg?branch=master)](https://travis-ci.org/fotinakis/jsonapi-serializers)
 [![Gem Version](https://badge.fury.io/rb/jsonapi-serializers.svg)](http://badge.fury.io/rb/jsonapi-serializers)
 
-
 JSONAPI::Serializers is a simple library for serializing Ruby objects and their relationships into the [JSON:API format](http://jsonapi.org/format/).
 
-As of writing, the JSON:API spec is approaching v1 and still undergoing changes. This library supports RC3+ and aims to keep up with the continuing development changes.
+This library is up-to-date with the finalized v1 JSON API spec.
 
 * [Features](#features)
 * [Installation](#installation)
@@ -432,6 +431,10 @@ end
 * Support for a `serializer_class` attribute on objects that overrides serializer discovery, would love a PR contribution for this.
 * Support for the `fields` spec is planned, would love a PR contribution for this.
 * Support for pagination/sorting is unlikely to be supported because it would likely involve coupling to ActiveRecord, but please open an issue if you have ideas of how to support this generically.
+
+## Release notes
+
+* v0.2.0: Initial release with support for the final v1 JSON API spec.
 
 ## Contributing
 
