@@ -53,7 +53,7 @@ require 'jsonapi-serializers'
 
 class PostSerializer
   include JSONAPI::Serializer
-  
+
   attribute :title
   attribute :content
 end
@@ -280,17 +280,21 @@ Returns:
     },
     "relationships": {
       "author": {
-        "self": "/posts/1/links/author",
-        "related": "/posts/1/author",
-        "linkage": {
+        "links": {
+          "self": "/posts/1/links/author",
+          "related": "/posts/1/author"
+        },
+        "data": {
           "type": "users",
           "id": "1"
         }
       },
       "comments": {
-        "self": "/posts/1/links/comments",
-        "related": "/posts/1/comments",
-        "linkage": [
+        "links": {
+          "self": "/posts/1/links/comments",
+          "related": "/posts/1/comments"
+        },
+        "data": [
           {
             "type": "comments",
             "id": "1"
@@ -322,16 +326,20 @@ Returns:
       },
       "relationships": {
         "user": {
-          "self": "/comments/1/links/user",
-          "related": "/comments/1/user",
-          "linkage": {
+          "links": {
+            "self": "/comments/1/links/user",
+            "related": "/comments/1/user"
+          },
+          "data": {
             "type": "users",
             "id": "2"
           }
         },
         "post": {
-          "self": "/comments/1/links/post",
-          "related": "/comments/1/post"
+          "links": {
+            "self": "/comments/1/links/post",
+            "related": "/comments/1/post"
+          }
         }
       }
     },
@@ -353,13 +361,13 @@ Returns:
 Notice a few things:
 * The [primary data](http://jsonapi.org/format/#document-structure-top-level) relationships now include "linkage" information for each relationship that was included.
 * The related objects themselves are loaded in the top-level `included` member.
-* The related objects _also_ include "linkage" information when a deeper relationship is also present in the compound document. This is a very powerful feature of the JSON:API spec, and allows you to deeply link complicated relationships all in the same document and in a single HTTP response. JSONAPI::Serializers automatically includes the correct linkage information for whatever `include` paths you specify. This conforms to this part of the spec:
-    
+* The related objects _also_ include "linkage" data when a deeper relationship is also present in the compound document. This is a very powerful feature of the JSON:API spec, and allows you to deeply link complicated relationships all in the same document and in a single HTTP response. JSONAPI::Serializers automatically includes the correct linkage data for whatever `include` paths you specify. This conforms to this part of the spec:
+
   > Note: Full linkage ensures that included resources are related to either the primary data (which could be resource objects or resource identifier objects) or to each other.
-  > [JSON:API Compound Documents](http://jsonapi.org/format/#document-structure-compound-documents)
+  > [JSON:API Compound Documents](http://jsonapi.org/format/#document-compound-documents)
 
 #### Relationship path handling
- 
+
 The `include` param also accepts a string of [relationship paths](http://jsonapi.org/format/#fetching-includes), ie. `include: 'author,comments,comments.user'` so you can pass an `?include` query param directly through to the serialize method. Be aware that letting users pass arbitrary relationship paths might introduce security issues depending on your authorization setup, where a user could `include` a relationship they might not be authorized to see directly. Be aware of what you allow API users to include.
 
 ## Rails example
