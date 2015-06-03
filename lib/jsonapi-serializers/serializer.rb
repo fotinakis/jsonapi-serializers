@@ -87,19 +87,21 @@ module JSONAPI
         has_one_relationships.each do |attribute_name, object|
           formatted_attribute_name = format_name(attribute_name)
           data[formatted_attribute_name] = {
-            'self' => relationship_self_link(attribute_name),
-            'related' => relationship_related_link(attribute_name),
+            'links' => {
+              'self' => relationship_self_link(attribute_name),
+              'related' => relationship_related_link(attribute_name),
+            },
           }
           if @_include_linkages.include?(formatted_attribute_name)
             if object.nil?
               # Spec: Resource linkage MUST be represented as one of the following:
               # - null for empty to-one relationships.
               # http://jsonapi.org/format/#document-structure-resource-relationships
-              data[formatted_attribute_name].merge!({'linkage' => nil})
+              data[formatted_attribute_name].merge!({'data' => nil})
             else
               related_object_serializer = JSONAPI::Serializer.find_serializer(object)
               data[formatted_attribute_name].merge!({
-                'linkage' => {
+                'data' => {
                   'type' => related_object_serializer.type.to_s,
                   'id' => related_object_serializer.id.to_s,
                 },
@@ -112,19 +114,21 @@ module JSONAPI
         has_many_relationships.each do |attribute_name, objects|
           formatted_attribute_name = format_name(attribute_name)
           data[formatted_attribute_name] = {
-            'self' => relationship_self_link(attribute_name),
-            'related' => relationship_related_link(attribute_name),
+            'links' => {
+              'self' => relationship_self_link(attribute_name),
+              'related' => relationship_related_link(attribute_name),
+            },
           }
           # Spec: Resource linkage MUST be represented as one of the following:
           # - an empty array ([]) for empty to-many relationships.
           # - an array of linkage objects for non-empty to-many relationships.
           # http://jsonapi.org/format/#document-structure-resource-relationships
           if @_include_linkages.include?(formatted_attribute_name)
-            data[formatted_attribute_name].merge!({'linkage' => []})
+            data[formatted_attribute_name].merge!({'data' => []})
             objects = objects || []
             objects.each do |obj|
               related_object_serializer = JSONAPI::Serializer.find_serializer(obj)
-              data[formatted_attribute_name]['linkage'] << {
+              data[formatted_attribute_name]['data'] << {
                 'type' => related_object_serializer.type.to_s,
                 'id' => related_object_serializer.id.to_s,
               }
