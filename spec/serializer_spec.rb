@@ -43,13 +43,13 @@ describe JSONAPI::Serializer do
         'relationships' => {
           'user' => {
             'links' => {
-              'self' => '/long-comments/1/links/user',
+              'self' => '/long-comments/1/relationships/user',
               'related' => '/long-comments/1/user',
             },
           },
           'post' => {
             'links' => {
-              'self' => '/long-comments/1/links/post',
+              'self' => '/long-comments/1/relationships/post',
               'related' => '/long-comments/1/post',
             },
           },
@@ -96,13 +96,13 @@ describe JSONAPI::Serializer do
             # Both to-one and to-many links are present, but neither include linkage:
             'author' => {
               'links' => {
-                'self' => '/posts/1/links/author',
+                'self' => '/posts/1/relationships/author',
                 'related' => '/posts/1/author',
               },
             },
             'long-comments' => {
               'links' => {
-                'self' => '/posts/1/links/long-comments',
+                'self' => '/posts/1/relationships/long-comments',
                 'related' => '/posts/1/long-comments',
               },
             },
@@ -131,7 +131,7 @@ describe JSONAPI::Serializer do
           'relationships' => {
             'author' => {
               'links' => {
-                'self' => '/posts/1/links/author',
+                'self' => '/posts/1/relationships/author',
                 'related' => '/posts/1/author',
               },
               # Spec: Resource linkage MUST be represented as one of the following:
@@ -141,7 +141,7 @@ describe JSONAPI::Serializer do
             },
             'long-comments' => {
               'links' => {
-                'self' => '/posts/1/links/long-comments',
+                'self' => '/posts/1/relationships/long-comments',
                 'related' => '/posts/1/long-comments',
               },
               'data' => [],
@@ -169,7 +169,7 @@ describe JSONAPI::Serializer do
           'relationships' => {
             'author' => {
               'links' => {
-                'self' => '/posts/1/links/author',
+                'self' => '/posts/1/relationships/author',
                 'related' => '/posts/1/author',
               },
               # Spec: Resource linkage MUST be represented as one of the following:
@@ -182,7 +182,7 @@ describe JSONAPI::Serializer do
             },
             'long-comments' => {
               'links' => {
-                'self' => '/posts/1/links/long-comments',
+                'self' => '/posts/1/relationships/long-comments',
                 'related' => '/posts/1/long-comments',
               },
               'data' => [],
@@ -210,14 +210,14 @@ describe JSONAPI::Serializer do
           'relationships' => {
             'author' => {
               'links' => {
-                'self' => '/posts/1/links/author',
+                'self' => '/posts/1/relationships/author',
                 'related' => '/posts/1/author',
               },
               'data' => nil,
             },
             'long-comments' => {
               'links' => {
-                'self' => '/posts/1/links/long-comments',
+                'self' => '/posts/1/relationships/long-comments',
                 'related' => '/posts/1/long-comments',
               },
               # Spec: Resource linkage MUST be represented as one of the following:
@@ -249,14 +249,14 @@ describe JSONAPI::Serializer do
           'relationships' => {
             'author' => {
               'links' => {
-                'self' => '/posts/1/links/author',
+                'self' => '/posts/1/relationships/author',
                 'related' => '/posts/1/author',
               },
               'data' => nil,
             },
             'long-comments' => {
               'links' => {
-                'self' => '/posts/1/links/long-comments',
+                'self' => '/posts/1/relationships/long-comments',
                 'related' => '/posts/1/long-comments',
               },
               # Spec: Resource linkage MUST be represented as one of the following:
