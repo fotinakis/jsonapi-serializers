@@ -29,9 +29,9 @@ This library is up-to-date with the finalized v1 JSON API spec.
 * Supports the readonly features of the JSON:API spec.
   * **Full support for compound documents** ("side-loading") and the `include` parameter.
 * Similar interface to ActiveModel::Serializers, should provide an easy migration path.
-* Intentionally unopinionated and simple, allows you to structure your app however you would like and then serialize the objects at the end.
+* Intentionally unopinionated and simple, allows you to structure your app however you would like and then serialize the objects at the end. Easy to integrate with your existing authorization systems and service objects.
 
-JSONAPI::Serializers was built as an intentionally simple serialization interface. It makes no assumptions about your database structure or routes and it does not provide controllers or any create/update interface to the objects. It is a library, not a framework. You will probably still need to do work to make your API fully compliant with the nuances of the [JSON:API spec](http://jsonapi.org/format/), for things like supporting `/links` routes and for supporting write actions like creating or updating objects. If you are looking for a more complete and opinionated framework, see the [jsonapi-resources](https://github.com/cerebris/jsonapi-resources) project.
+JSONAPI::Serializers was built as an intentionally simple serialization interface. It makes no assumptions about your database structure or routes and it does not provide controllers or any create/update interface to the objects. It is a library, not a framework. You will probably still need to do work to make your API fully compliant with the nuances of the [JSON:API spec](http://jsonapi.org/format/), for things like supporting `/relationships` routes and for supporting write actions like creating or updating objects. If you are looking for a more complete and opinionated framework, see the [jsonapi-resources](https://github.com/cerebris/jsonapi-resources) project.
 
 ## Installation
 
