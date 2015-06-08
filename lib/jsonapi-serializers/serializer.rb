@@ -302,7 +302,7 @@ module JSONAPI
       # http://jsonapi.org/format/#document-structure-resource-objects
       data.merge!({'attributes' => serializer.attributes}) if !serializer.attributes.nil?
       data.merge!({'links' => serializer.links}) if !serializer.links.nil?
-      data.merge!({'relationships' => serializer.relationships}) if !serializer.relationships.nil?
+      data.merge!({'relationships' => serializer.relationships}) unless serializer.relationships.empty?
       data.merge!({'meta' => serializer.meta}) if !serializer.meta.nil?
       data
     end

@@ -25,7 +25,6 @@ describe JSONAPI::Serializer do
         'links' => {
           'self' => '/posts/1',
         },
-        'relationships' => {},
       })
     end
     it 'can serialize primary data for a simple object with a long name' do
@@ -69,7 +68,6 @@ describe JSONAPI::Serializer do
         'links' => {
           'self' => '/posts/1',
         },
-        'relationships' => {},
         'meta' => {
           'copyright' => 'Copyright 2015 Example Corp.',
           'authors' => [
