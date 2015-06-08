@@ -76,8 +76,7 @@ Returns a hash:
     },
     "links": {
       "self": "/posts/1"
-    },
-    "relationships": {}
+    }
   }
 }
 ```
@@ -102,8 +101,7 @@ Returns:
       },
       "links": {
         "self": "/posts/1"
-      },
-      "relationships": {}
+      }
     },
     {
       "id": "2",
@@ -114,8 +112,7 @@ Returns:
       },
       "links": {
         "self": "/posts/2"
-      },
-      "relationships": {}
+      }
     }
   ]
 }
@@ -311,8 +308,7 @@ Returns:
       },
       "links": {
         "self": "/users/1"
-      },
-      "relationships": {}
+      }
     },
     {
       "id": "1",
@@ -350,8 +346,7 @@ Returns:
       },
       "links": {
         "self": "/users/2"
-      },
-      "relationships": {}
+      }
     }
   ]
 }
@@ -434,6 +429,7 @@ end
 
 ## Release notes
 
+* v0.2.2: Compliance fix for excluding empty relationship objects.
 * v0.2.1: Compliance fix for self links.
 * v0.2.0: Initial release with support for the final v1 JSON API spec.
 
