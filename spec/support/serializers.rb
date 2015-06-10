@@ -95,4 +95,8 @@ module MyApp
       context.fetch(:hide_body, false)
     end
   end
+
+  class EmptySerializer
+    include JSONAPI::Serializer
+  end
 end

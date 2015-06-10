@@ -139,6 +139,7 @@ module JSONAPI
       end
 
       def attributes
+        return {} if self.class.attributes_map.nil?
         attributes = {}
         self.class.attributes_map.each do |attribute_name, attr_data|
           next if !should_include_attr?(attr_data[:options][:if], attr_data[:options][:unless])

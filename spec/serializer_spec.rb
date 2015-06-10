@@ -275,6 +275,18 @@ describe JSONAPI::Serializer do
         })
       end
     end
+    it 'can serialize primary data for an empty serializer with no attributes' do
+      post = create(:post)
+      primary_data = serialize_primary(post, {serializer: MyApp::EmptySerializer})
+      expect(primary_data).to eq({
+        'id' => '1',
+        'type' => 'posts',
+        'attributes' => {},
+        'links' => {
+          'self' => '/posts/1',
+        },
+      })
+    end
   end
 
   describe 'JSONAPI::Serializer.serialize' do
