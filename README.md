@@ -429,6 +429,7 @@ end
 
 ## Release notes
 
+* v0.2.3: Support serializers with no attributes.
 * v0.2.2: Compliance fix for excluding empty relationship objects.
 * v0.2.1: Compliance fix for self links.
 * v0.2.0: Initial release with support for the final v1 JSON API spec.
