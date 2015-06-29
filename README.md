@@ -409,7 +409,7 @@ class Api::V1::ReposController < Api::V1::BaseController
   end
 end
 
-# lib/jsonapi_mimetypes.rb
+# config/initializers/jsonapi_mimetypes.rb
 # Without this mimetype registration, controllers will not automatically parse JSON API params.
 module JSONAPI
   MIMETYPE = "application/vnd.api+json"
