@@ -149,11 +149,19 @@ Note that the JSON:API spec distinguishes in how null/empty is handled for singl
 
 ### Custom attributes
 
-By default the serializer looks for the same name of the attribute on the object it is given. You can customize this behavior by providing a block to the attribute:
+By default the serializer looks for the same name of the attribute on the object it is given. You can customize this behavior by providing a block to `attribute`, `has_one`, or `has_many`:
 
 ```ruby
   attribute :content do
     object.body
+  end
+  
+  has_one :comment do
+    Comment.where(post: object).take!
+  end
+  
+  has_many :authors do
+    Author.where(post: object)
   end
 ```
 
