@@ -64,6 +64,7 @@ module MyApp
 
   class PostSerializerWithMetadata
     include JSONAPI::Serializer
+    include JSONAPI::Serializer
 
     attribute :title
     attribute :long_content do
@@ -83,8 +84,6 @@ module MyApp
   end
 
   class PostSerializerWithContextHandling < SimplestPostSerializer
-    include JSONAPI::Serializer
-
     attribute :body, if: :show_body?, unless: :hide_body?
 
     def show_body?
@@ -93,6 +92,26 @@ module MyApp
 
     def hide_body?
       context.fetch(:hide_body, false)
+    end
+  end
+
+  class PostSerializerWithoutLinks
+    include JSONAPI::Serializer
+
+    attribute :title
+    attribute :long_content do
+      object.body
+    end
+
+    has_one :author
+    has_many :long_comments
+
+    def relationship_self_link(attribute_name)
+      nil
+    end
+
+    def relationship_related_link(attribute_name)
+      nil
     end
   end
 

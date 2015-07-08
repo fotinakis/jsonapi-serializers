@@ -155,11 +155,11 @@ By default the serializer looks for the same name of the attribute on the object
   attribute :content do
     object.body
   end
-  
+
   has_one :comment do
     Comment.where(post: object).take!
   end
-  
+
   has_many :authors do
     Author.where(post: object)
   end
@@ -222,6 +222,8 @@ def relationship_related_link(attribute_name)
   "#{self_link}/#{format_name(attribute_name)}"
 end
 ```
+
+If you override `self_link`, `relationship_self_link`, or `relationship_related_link` to return `nil`, the link will be excluded from the serialized object.
 
 ## Relationships
 

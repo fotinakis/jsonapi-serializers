@@ -86,12 +86,14 @@ module JSONAPI
         # Merge in data for has_one relationships.
         has_one_relationships.each do |attribute_name, object|
           formatted_attribute_name = format_name(attribute_name)
-          data[formatted_attribute_name] = {
-            'links' => {
-              'self' => relationship_self_link(attribute_name),
-              'related' => relationship_related_link(attribute_name),
-            },
-          }
+
+          data[formatted_attribute_name] = {}
+          links_self = relationship_self_link(attribute_name)
+          links_related = relationship_related_link(attribute_name)
+          data[formatted_attribute_name]['links'] = {} if links_self || links_related
+          data[formatted_attribute_name]['links']['self'] = links_self if links_self
+          data[formatted_attribute_name]['links']['related'] = links_related if links_related
+
           if @_include_linkages.include?(formatted_attribute_name)
             if object.nil?
               # Spec: Resource linkage MUST be represented as one of the following:
@@ -113,12 +115,14 @@ module JSONAPI
         # Merge in data for has_many relationships.
         has_many_relationships.each do |attribute_name, objects|
           formatted_attribute_name = format_name(attribute_name)
-          data[formatted_attribute_name] = {
-            'links' => {
-              'self' => relationship_self_link(attribute_name),
-              'related' => relationship_related_link(attribute_name),
-            },
-          }
+
+          data[formatted_attribute_name] = {}
+          links_self = relationship_self_link(attribute_name)
+          links_related = relationship_related_link(attribute_name)
+          data[formatted_attribute_name]['links'] = {} if links_self || links_related
+          data[formatted_attribute_name]['links']['self'] = links_self if links_self
+          data[formatted_attribute_name]['links']['related'] = links_related if links_related
+
           # Spec: Resource linkage MUST be represented as one of the following:
           # - an empty array ([]) for empty to-many relationships.
           # - an array of linkage objects for non-empty to-many relationships.

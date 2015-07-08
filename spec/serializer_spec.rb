@@ -107,6 +107,27 @@ describe JSONAPI::Serializer do
           },
         })
       end
+      it 'does not include links if relationship_self_link and relationship_related_link are nil' do
+        post = create(:post)
+        primary_data = serialize_primary(post, {serializer: MyApp::PostSerializerWithoutLinks})
+        expect(primary_data).to eq({
+          'id' => '1',
+          'type' => 'posts',
+          'attributes' => {
+            'title' => 'Title for Post 1',
+            'long-content' => 'Body for Post 1',
+          },
+          'links' => {
+            'self' => '/posts/1',
+          },
+          # This is technically invalid since relationships MUST contain at least one of links,
+          # data, or meta, but we leave that up to the user.
+          'relationships' => {
+            'author' => {},
+            'long-comments' => {},
+          },
+        })
+      end
     end
     context 'with linkage includes' do
       it 'can serialize primary data for a null to-one relationship' do
