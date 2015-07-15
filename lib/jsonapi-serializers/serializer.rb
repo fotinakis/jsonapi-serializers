@@ -225,7 +225,7 @@ module JSONAPI
         include: includes
       }
 
-      if options[:is_collection] && !objects.respond_to?(:each)
+      if options[:is_collection] && !objects.kind_of?(Array)
         raise JSONAPI::Serializer::AmbiguousCollectionError.new(
           'Attempted to serialize a single object as a collection.')
       end
@@ -252,7 +252,7 @@ module JSONAPI
         # Duck-typing check for a collection being passed without is_collection true.
         # We always must be told if serializing a collection because the JSON:API spec distinguishes
         # how to serialize null single resources vs. empty collections.
-        if objects.respond_to?(:each)
+        if objects.kind_of?(Array)
           raise JSONAPI::Serializer::AmbiguousCollectionError.new(
             'Must provide `is_collection: true` to `serialize` when serializing collections.')
         end
