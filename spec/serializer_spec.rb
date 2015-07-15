@@ -333,6 +333,15 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+    it 'can serialize a single object with an `each` method by passing skip_collection_check: true' do
+      post = create(:post)
+      post.define_singleton_method(:each) do
+        "defining this just to defeat the duck-type check"
+      end
+      expect(JSONAPI::Serializer.serialize(post, skip_collection_check: true)).to eq({
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
+      })
+    end
     it 'can serialize a collection' do
       posts = create_list(:post, 2)
       expect(JSONAPI::Serializer.serialize(posts, is_collection: true)).to eq({
