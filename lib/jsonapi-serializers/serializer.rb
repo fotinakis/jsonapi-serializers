@@ -226,7 +226,7 @@ module JSONAPI
         include: includes
       }
 
-      if options[:is_collection] && !objects.respond_to?(:each)
+      if !options[:skip_collection_check] && options[:is_collection] && !objects.respond_to?(:each)
         raise JSONAPI::Serializer::AmbiguousCollectionError.new(
           'Attempted to serialize a single object as a collection.')
       end
