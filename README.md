@@ -16,6 +16,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Null handling](#null-handling)
   * [Custom attributes](#custom-attributes)
   * [More customizations](#more-customizations)
+  * [Base URL](#base-url)
 * [Relationships](#relationships)
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
@@ -208,6 +209,12 @@ def meta
 end
 ```
 ```ruby
+# Override this to set a base URL (http://example.com) for all links. No trailing slash.
+def base_url
+  @base_url
+end
+```
+```ruby
 def self_link
   "#{base_url}/#{type}/#{id}"
 end
@@ -225,11 +232,28 @@ end
 
 If you override `self_link`, `relationship_self_link`, or `relationship_related_link` to return `nil`, the link will be excluded from the serialized object.
 
-## Base URL
-You can specify an optional base URL to be used in links. This allows you to build the URL with different subdomains or other logic from the request:
+### Base URL
+
+You can override the `base_url` instance method to set a URL to be used in all links.
 
 ```ruby
-JSONAPI::Serializer.serialize(post, is_collection: true, base_url: 'http://example.com')
+class BaseSerializer
+  include JSONAPI::Serializer
+
+  def base_url
+    'http://example.com'
+  end
+end
+
+class PostSerializer < BaseSerializer
+  attribute :title
+  attribute :content
+
+  has_one :author
+  has_many :comments
+end
+
+JSONAPI::Serializer.serialize(post)
 ```
 
 Returns:
@@ -264,7 +288,13 @@ Returns:
 }
 ```
 
-Note: if you override `self_link` in your serializer, base_url will not be used.
+Alternatively, you can specify `base_url` as an argument to `serialize` which allows you to build the URL with different subdomains or other logic from the request:
+
+```ruby
+JSONAPI::Serializer.serialize(post, base_url: 'http://example.com')
+```
+
+Note: if you override `self_link` in your serializer and leave out `base_url`, it will not be included.
 
 ## Relationships
 

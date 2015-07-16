@@ -710,18 +710,27 @@ describe JSONAPI::Serializer do
     it 'is empty by default' do
       long_comments = create_list(:long_comment, 1)
       post = create(:post, long_comments: long_comments)
-      data = MyApp::PostSerializer.serialize(post)
+      data = JSONAPI::Serializer.serialize(post)
       expect(data['data']['links']['self']).to eq('/posts/1')
       expect(data['data']['relationships']['author']['links']).to eq({
         'self' => '/posts/1/relationships/author',
         'related' => '/posts/1/author'
       })
     end
-
     it 'adds base_url to links if passed' do
       long_comments = create_list(:long_comment, 1)
       post = create(:post, long_comments: long_comments)
-      data = MyApp::PostSerializer.serialize(post, base_url: 'http://example.com')
+      data = JSONAPI::Serializer.serialize(post, base_url: 'http://example.com')
+      expect(data['data']['links']['self']).to eq('http://example.com/posts/1')
+      expect(data['data']['relationships']['author']['links']).to eq({
+        'self' => 'http://example.com/posts/1/relationships/author',
+        'related' => 'http://example.com/posts/1/author'
+      })
+    end
+    it 'uses overriden base_url method if it exists' do
+      long_comments = create_list(:long_comment, 1)
+      post = create(:post, long_comments: long_comments)
+      data = JSONAPI::Serializer.serialize(post, serializer: MyApp::PostSerializerWithBaseUrl)
       expect(data['data']['links']['self']).to eq('http://example.com/posts/1')
       expect(data['data']['relationships']['author']['links']).to eq({
         'self' => 'http://example.com/posts/1/relationships/author',

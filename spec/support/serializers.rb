@@ -115,6 +115,22 @@ module MyApp
     end
   end
 
+  class PostSerializerWithBaseUrl
+    include JSONAPI::Serializer
+
+    def base_url
+      'http://example.com'
+    end
+
+    attribute :title
+    attribute :long_content do
+      object.body
+    end
+
+    has_one :author
+    has_many :long_comments
+  end
+
   class EmptySerializer
     include JSONAPI::Serializer
   end

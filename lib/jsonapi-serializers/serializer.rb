@@ -66,6 +66,11 @@ module JSONAPI
       def meta
       end
 
+      # Override this to set a base URL (http://example.com) for all links. No trailing slash.
+      def base_url
+        @base_url
+      end
+
       def self_link
         "#{base_url}/#{type}/#{id}"
       end
