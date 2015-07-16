@@ -24,10 +24,12 @@ module JSONAPI
     module InstanceMethods
       attr_accessor :object
       attr_accessor :context
+      attr_accessor :base_url
 
       def initialize(object, options = {})
         @object = object
         @context = options[:context] || {}
+        @base_url = options[:base_url]
 
         # Internal serializer options, not exposed through attr_accessor. No touchie.
         @_include_linkages = options[:include_linkages] || []
@@ -65,7 +67,7 @@ module JSONAPI
       end
 
       def self_link
-        "/#{type}/#{id}"
+        "#{base_url}/#{type}/#{id}"
       end
 
       def relationship_self_link(attribute_name)
@@ -214,6 +216,7 @@ module JSONAPI
       options[:serializer] = options.delete('serializer') || options[:serializer]
       options[:context] = options.delete('context') || options[:context] || {}
       options[:skip_collection_check] = options.delete('skip_collection_check') || options[:skip_collection_check] || false
+      options[:base_url] = options.delete('base_url') || options[:base_url]
 
       # Normalize includes.
       includes = options[:include]
@@ -223,7 +226,8 @@ module JSONAPI
       passthrough_options = {
         context: options[:context],
         serializer: options[:serializer],
-        include: includes
+        include: includes,
+        base_url: options[:base_url]
       }
 
       if !options[:skip_collection_check] && options[:is_collection] && !objects.respond_to?(:each)
@@ -280,10 +284,11 @@ module JSONAPI
         end
 
         result['included'] = relationship_data.map do |_, data|
-          passthrough_options = {}
-          passthrough_options[:serializer] = find_serializer_class(data[:object])
-          passthrough_options[:include_linkages] = data[:include_linkages]
-          serialize_primary(data[:object], passthrough_options)
+          included_passthrough_options = {}
+          included_passthrough_options[:base_url] = passthrough_options[:base_url]
+          included_passthrough_options[:serializer] = find_serializer_class(data[:object])
+          included_passthrough_options[:include_linkages] = data[:include_linkages]
+          serialize_primary(data[:object], included_passthrough_options)
         end
       end
       result
