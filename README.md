@@ -209,7 +209,7 @@ end
 ```
 ```ruby
 def self_link
-  "/#{type}/#{id}"
+  "#{base_url}/#{type}/#{id}"
 end
 ```
 ```ruby
@@ -224,6 +224,47 @@ end
 ```
 
 If you override `self_link`, `relationship_self_link`, or `relationship_related_link` to return `nil`, the link will be excluded from the serialized object.
+
+## Base URL
+You can specify an optional base URL to be used in links. This allows you to build the URL with different subdomains or other logic from the request:
+
+```ruby
+JSONAPI::Serializer.serialize(post, is_collection: true, base_url: 'http://example.com')
+```
+
+Returns:
+
+```json
+{
+  "data": {
+    "id": "1",
+    "type": "posts",
+    "attributes": {
+      "title": "Hello World",
+      "content": "Your first post"
+    },
+    "links": {
+      "self": "http://example.com/posts/1"
+    },
+    "relationships": {
+      "author": {
+        "links": {
+          "self": "http://example.com/posts/1/relationships/author",
+          "related": "http://example.com/posts/1/author"
+        }
+      },
+      "comments": {
+        "links": {
+          "self": "http://example.com/posts/1/relationships/comments",
+          "related": "http://example.com/posts/1/comments"
+        },
+      }
+    }
+  }
+}
+```
+
+Note: if you override `self_link` in your serializer, base_url will not be used.
 
 ## Relationships
 
