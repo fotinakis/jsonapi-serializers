@@ -439,6 +439,7 @@ end
 
 ## Release notes
 
+* v0.2.5: Allow disabling ambiguous collection checks for Sequel support.
 * v0.2.4: Improve handling for nil relationship links.
 * v0.2.3: Support serializers with no attributes.
 * v0.2.2: Compliance fix for excluding empty relationship objects.
