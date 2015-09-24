@@ -296,6 +296,14 @@ JSONAPI::Serializer.serialize(post, base_url: 'http://example.com')
 
 Note: if you override `self_link` in your serializer and leave out `base_url`, it will not be included.
 
+### Top-level metadata
+
+You can pass a `meta` argument to specify top-level metadata:
+
+```ruby
+JSONAPI::Serializer.serialize(post, meta: {copyright: 'Copyright 2015 Example Corp.'})
+```
+
 ## Relationships
 
 You can easily specify relationships with the `has_one` and `has_many` directives.
@@ -510,6 +518,7 @@ end
 
 ## Release notes
 
+* v0.3.0: Add top-level `meta` support.
 * v0.2.6: Add `base_url` support.
 * v0.2.5: Allow disabling ambiguous collection checks for Sequel support.
 * v0.2.4: Improve handling for nil relationship links.
