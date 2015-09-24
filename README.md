@@ -17,6 +17,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Custom attributes](#custom-attributes)
   * [More customizations](#more-customizations)
   * [Base URL](#base-url)
+  * [Root metadata](#root-metadata)
 * [Relationships](#relationships)
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
@@ -296,7 +297,7 @@ JSONAPI::Serializer.serialize(post, base_url: 'http://example.com')
 
 Note: if you override `self_link` in your serializer and leave out `base_url`, it will not be included.
 
-### Top-level metadata
+### Root metadata
 
 You can pass a `meta` argument to specify top-level metadata:
 
