@@ -333,6 +333,14 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+    it 'can include a top level meta node' do
+      post = create(:post)
+      meta = {authors: ['Yehuda Katz', 'Steve Klabnik'], copyright: 'Copyright 2015 Example Corp.'}
+      expect(JSONAPI::Serializer.serialize(post, meta: meta)).to eq({
+        'meta' => meta,
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
+      })
+    end
     it 'can serialize a single object with an `each` method by passing skip_collection_check: true' do
       post = create(:post)
       post.define_singleton_method(:each) do
