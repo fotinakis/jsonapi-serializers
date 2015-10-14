@@ -91,7 +91,7 @@ module JSONAPI
       def relationships
         data = {}
         # Merge in data for has_one relationships.
-        has_one_relationships.each do |attribute_name, object|
+        has_one_relationships.each do |attribute_name, attr_data|
           formatted_attribute_name = format_name(attribute_name)
 
           data[formatted_attribute_name] = {}
@@ -102,6 +102,7 @@ module JSONAPI
           data[formatted_attribute_name]['links']['related'] = links_related if links_related
 
           if @_include_linkages.include?(formatted_attribute_name)
+            object = has_one_relationship(attribute_name, attr_data)
             if object.nil?
               # Spec: Resource linkage MUST be represented as one of the following:
               # - null for empty to-one relationships.
@@ -120,7 +121,7 @@ module JSONAPI
         end
 
         # Merge in data for has_many relationships.
-        has_many_relationships.each do |attribute_name, objects|
+        has_many_relationships.each do |attribute_name, attr_data|
           formatted_attribute_name = format_name(attribute_name)
 
           data[formatted_attribute_name] = {}
@@ -136,7 +137,7 @@ module JSONAPI
           # http://jsonapi.org/format/#document-structure-resource-relationships
           if @_include_linkages.include?(formatted_attribute_name)
             data[formatted_attribute_name].merge!({'data' => []})
-            objects = objects || []
+            objects = has_many_relationship(attribute_name, attr_data) || []
             objects.each do |obj|
               related_object_serializer = JSONAPI::Serializer.find_serializer(obj)
               data[formatted_attribute_name]['data'] << {
@@ -165,9 +166,13 @@ module JSONAPI
         data = {}
         self.class.to_one_associations.each do |attribute_name, attr_data|
           next if !should_include_attr?(attr_data[:options][:if], attr_data[:options][:unless])
-          data[attribute_name] = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
+          data[attribute_name] = attr_data
         end
         data
+      end
+
+      def has_one_relationship(attribute_name, attr_data)
+        evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
       end
 
       def has_many_relationships
@@ -175,9 +180,13 @@ module JSONAPI
         data = {}
         self.class.to_many_associations.each do |attribute_name, attr_data|
           next if !should_include_attr?(attr_data[:options][:if], attr_data[:options][:unless])
-          data[attribute_name] = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
+          data[attribute_name] = attr_data
         end
         data
+      end
+
+      def has_many_relationship(attribute_name, attr_data)
+        evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
       end
 
       def should_include_attr?(if_method_name, unless_method_name)
@@ -358,11 +367,13 @@ module JSONAPI
         is_valid_attr = false
         if serializer.has_one_relationships.has_key?(unformatted_attr_name)
           is_valid_attr = true
-          object = serializer.has_one_relationships[unformatted_attr_name]
+          attr_data = serializer.has_one_relationships[unformatted_attr_name]
+          object = serializer.has_one_relationship(unformatted_attr_name, attr_data)
         elsif serializer.has_many_relationships.has_key?(unformatted_attr_name)
           is_valid_attr = true
           is_collection = true
-          object = serializer.has_many_relationships[unformatted_attr_name]
+          attr_data = serializer.has_many_relationships[unformatted_attr_name]
+          object = serializer.has_many_relationship(unformatted_attr_name, attr_data)
         end
         if !is_valid_attr
           raise JSONAPI::Serializer::InvalidIncludeError.new(
