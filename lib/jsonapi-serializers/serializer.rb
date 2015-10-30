@@ -364,6 +364,15 @@ module JSONAPI
           is_collection = true
           object = serializer.has_many_relationships[unformatted_attr_name]
         end
+
+        if is_valid_attr && attribute_name.include?("_")
+          expected_name = serializer.format_name(attribute_name)
+
+          raise JSONAPI::Serializer::InvalidIncludeError.new(
+            "'#{attribute_name}' is not a valid include.  Did you mean '#{expected_name}' ?"
+          )
+        end
+
         if !is_valid_attr
           raise JSONAPI::Serializer::InvalidIncludeError.new(
             "'#{attribute_name}' is not a valid include.")
