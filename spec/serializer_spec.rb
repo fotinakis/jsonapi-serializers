@@ -368,7 +368,7 @@ describe JSONAPI::Serializer do
     it "raises error if include is not named correctly" do
       post = create(:post)
       error = JSONAPI::Serializer::InvalidIncludeError
-      expect { JSONAPI::Serializer.serialize(post, :include => ['long_comments']) }.to raise_error(error)
+      expect { JSONAPI::Serializer.serialize(post, include: ['long_comments']) }.to raise_error(error)
     end
 
     it 'can serialize a nil object when given serializer' do
