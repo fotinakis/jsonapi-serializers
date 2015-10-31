@@ -364,6 +364,13 @@ describe JSONAPI::Serializer do
       error = JSONAPI::Serializer::AmbiguousCollectionError
       expect { JSONAPI::Serializer.serialize(posts) }.to raise_error(error)
     end
+
+    it 'raises error if include is not named correctly' do
+      post = create(:post)
+      error = JSONAPI::Serializer::InvalidIncludeError
+      expect { JSONAPI::Serializer.serialize(post, include: ['long_comments']) }.to raise_error(error)
+    end
+
     it 'can serialize a nil object when given serializer' do
       options = {serializer: MyApp::PostSerializer}
       expect(JSONAPI::Serializer.serialize(nil, options)).to eq({'data' => nil})
