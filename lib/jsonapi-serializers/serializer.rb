@@ -1,5 +1,5 @@
 require 'set'
-require 'active_support/inflector'
+require 'active_support/inflector/methods'
 
 module JSONAPI
   module Serializer
