@@ -519,6 +519,7 @@ end
 
 ## Release notes
 
+* v0.3.1: Improve performance of loading included relationships.
 * v0.3.0: Add top-level `meta` support.
 * v0.2.6: Add `base_url` support.
 * v0.2.5: Allow disabling ambiguous collection checks for Sequel support.
