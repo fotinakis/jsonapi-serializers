@@ -17,6 +17,10 @@ module MyApp
   class User
     attr_accessor :id
     attr_accessor :name
+
+    def jsonapi_serializer_class_name
+      'MyAppOtherNamespace::UserSerializer'
+    end
   end
 
   class PostSerializer
@@ -39,12 +43,6 @@ module MyApp
 
     # Circular-reference back to post.
     has_one :post
-  end
-
-  class UserSerializer
-    include JSONAPI::Serializer
-
-    attribute :name
   end
 
   # More customized, one-off serializers to test particular behaviors:
@@ -133,5 +131,15 @@ module MyApp
 
   class EmptySerializer
     include JSONAPI::Serializer
+  end
+end
+
+# Test the `jsonapi_serializer_class_name` override method for serializers in different namespaces.
+# There is no explicit test for this, just implicit tests that correctly serialize User objects.
+module MyAppOtherNamespace
+  class UserSerializer
+    include JSONAPI::Serializer
+
+    attribute :name
   end
 end
