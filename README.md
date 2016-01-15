@@ -527,6 +527,7 @@ end
 
 ## Release notes
 
+* v0.4.0: Support for declaring multiple `attributes`.
 * v0.3.1: Improve performance of loading included relationships.
 * v0.3.0: Add top-level `meta` support.
 * v0.2.6: Add `base_url` support.
