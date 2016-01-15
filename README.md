@@ -14,6 +14,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Serialize an object](#serialize-an-object)
   * [Serialize a collection](#serialize-a-collection)
   * [Null handling](#null-handling)
+  * [Multiple attributes](#multiple-attributes)
   * [Custom attributes](#custom-attributes)
   * [More customizations](#more-customizations)
   * [Base URL](#base-url)
@@ -148,6 +149,13 @@ Returns:
 ```
 
 Note that the JSON:API spec distinguishes in how null/empty is handled for single objects vs. collections, so you must always provide `is_collection: true` when serializing multiple objects. If you attempt to serialize multiple objects without this flag (or a single object with it on) a `JSONAPI::Serializer::AmbiguousCollectionError` will be raised.
+
+### Multiple attributes
+You could declare multiple attributes at once:
+
+```ruby
+ attributes :title, :body, :contents
+```
 
 ### Custom attributes
 

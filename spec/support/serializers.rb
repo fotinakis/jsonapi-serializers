@@ -134,4 +134,10 @@ module MyApp
   class EmptySerializer
     include JSONAPI::Serializer
   end
+
+  class MultipleAttributesSerializer
+    include JSONAPI::Serializer
+
+    attributes :title, :body
+  end
 end

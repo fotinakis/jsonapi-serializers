@@ -128,6 +128,21 @@ describe JSONAPI::Serializer do
           },
         })
       end
+      it 'serializes object when multiple attributes are declared once' do
+        post = create(:post)
+        primary_data = serialize_primary(post, {serializer: MyApp::MultipleAttributesSerializer})
+        expect(primary_data).to eq({
+          'id' => '1',
+          'type' => 'posts',
+          'attributes' => {
+            'title' => 'Title for Post 1',
+            'body' => 'Body for Post 1',
+          },
+          'links' => {
+            'self' => '/posts/1',
+          }
+        })
+      end
     end
     context 'with linkage includes' do
       it 'can serialize primary data for a null to-one relationship' do

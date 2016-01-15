@@ -17,6 +17,10 @@ module JSONAPI
         add_attribute(name, options, &block)
       end
 
+      def attributes(*names)
+        names.each { |name| add_attribute(name) }
+      end
+
       def has_one(name, options = {}, &block)
         add_to_one_association(name, options, &block)
       end
