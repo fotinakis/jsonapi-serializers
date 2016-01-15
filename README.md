@@ -14,6 +14,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Serialize an object](#serialize-an-object)
   * [Serialize a collection](#serialize-a-collection)
   * [Null handling](#null-handling)
+  * [Multiple attributes](#multiple-attributes)
   * [Custom attributes](#custom-attributes)
   * [More customizations](#more-customizations)
   * [Base URL](#base-url)
