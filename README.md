@@ -149,6 +149,13 @@ Returns:
 
 Note that the JSON:API spec distinguishes in how null/empty is handled for single objects vs. collections, so you must always provide `is_collection: true` when serializing multiple objects. If you attempt to serialize multiple objects without this flag (or a single object with it on) a `JSONAPI::Serializer::AmbiguousCollectionError` will be raised.
 
+### Multiple attributes
+You could declare multiple attributes at once:
+
+```ruby
+ attributes :title, :body, :contents
+```
+
 ### Custom attributes
 
 By default the serializer looks for the same name of the attribute on the object it is given. You can customize this behavior by providing a block to `attribute`, `has_one`, or `has_many`:
