@@ -513,7 +513,14 @@ module JSONAPI
   MIMETYPE = "application/vnd.api+json"
 end
 Mime::Type.register(JSONAPI::MIMETYPE, :api_json)
+
+# Rails 4
 ActionDispatch::ParamsParser::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MIMETYPE)] = lambda do |body|
+  JSON.parse(body)
+end
+
+# Rails 5 moved DEFAULT_PARSERS
+ActionDispatch::Http::Parameters::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MIMETYPE)] = lambda do |body|
   JSON.parse(body)
 end
 ```
