@@ -549,6 +549,7 @@ end
 
 ## Release notes
 
+* v0.5.0: Support for explicit serializer discovery.
 * v0.4.0: Support for declaring multiple `attributes`.
 * v0.3.1: Improve performance of loading included relationships.
 * v0.3.0: Add top-level `meta` support.
