@@ -211,6 +211,9 @@ module JSONAPI
     end
 
     def self.find_serializer_class_name(object)
+      if object.respond_to?(:jsonapi_serializer_class_name)
+        return object.jsonapi_serializer_class_name.to_s
+      end
       "#{object.class.name}Serializer"
     end
 

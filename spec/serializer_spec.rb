@@ -423,7 +423,7 @@ describe JSONAPI::Serializer do
       expect(JSONAPI::Serializer.serialize(post, include: ['author'])).to eq({
         'data' => expected_primary_data,
         'included' => [
-          serialize_primary(post.author, {serializer: MyApp::UserSerializer}),
+          serialize_primary(post.author, {serializer: MyAppOtherNamespace::UserSerializer}),
         ],
       })
     end
@@ -518,7 +518,7 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
           # Only the author is included:
-          serialize_primary(post.author, {serializer: MyApp::UserSerializer}),
+          serialize_primary(post.author, {serializer: MyAppOtherNamespace::UserSerializer}),
         ],
       }
       includes = ['long-comments.post.author']
@@ -542,8 +542,8 @@ describe JSONAPI::Serializer do
         # Same note about primary data linkages as above.
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
-          serialize_primary(first_user, {serializer: MyApp::UserSerializer}),
-          serialize_primary(second_user, {serializer: MyApp::UserSerializer}),
+          serialize_primary(first_user, {serializer: MyAppOtherNamespace::UserSerializer}),
+          serialize_primary(second_user, {serializer: MyAppOtherNamespace::UserSerializer}),
         ],
       }
       includes = ['long-comments.user']
@@ -571,7 +571,7 @@ describe JSONAPI::Serializer do
             include_linkages: ['user'],
           }),
           # Note: post.author does not show up here because it was not included.
-          serialize_primary(comment_user, {serializer: MyApp::UserSerializer}),
+          serialize_primary(comment_user, {serializer: MyAppOtherNamespace::UserSerializer}),
         ],
       }
       includes = ['long-comments', 'long-comments.user']
@@ -598,7 +598,7 @@ describe JSONAPI::Serializer do
         'included' => [
           serialize_primary(long_comments.first, {serializer: MyApp::LongCommentSerializer}),
           serialize_primary(long_comments.last, {serializer: MyApp::LongCommentSerializer}),
-          serialize_primary(post.author, {serializer: MyApp::UserSerializer}),
+          serialize_primary(post.author, {serializer: MyAppOtherNamespace::UserSerializer}),
         ],
       }
       # Also test that it handles string include arguments.
