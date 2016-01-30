@@ -19,6 +19,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [More customizations](#more-customizations)
   * [Base URL](#base-url)
   * [Root metadata](#root-metadata)
+  * [Explicit serializer discovery](#explicit-serializer-discovery)
 * [Relationships](#relationships)
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
@@ -312,6 +313,20 @@ You can pass a `meta` argument to specify top-level metadata:
 ```ruby
 JSONAPI::Serializer.serialize(post, meta: {copyright: 'Copyright 2015 Example Corp.'})
 ```
+
+### Explicit serializer discovery
+
+By default, jsonapi-serializers assumes that the serializer class for `Namespace::User` is `Namespace::UserSerializer`. You can override this behavior on a per-object basis by implementing the `jsonapi_serializer_class_name` method.
+
+```ruby
+class User
+  def jsonapi_serializer_class_name
+    'SomeOtherNamespace::CustomUserSerializer'
+  end
+end
+```
+
+Now, when a `User` object is serialized, it will use the `SomeOtherNamespace::CustomUserSerializer`.
 
 ## Relationships
 
