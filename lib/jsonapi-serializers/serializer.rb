@@ -269,7 +269,6 @@ module JSONAPI
         primary_data = nil
       elsif options[:is_collection]
         # Have object collection.
-        passthrough_options[:serializer] ||= find_serializer_class(objects.first)
         primary_data = serialize_primary_multi(objects, passthrough_options)
       else
         # Duck-typing check for a collection being passed without is_collection true.
@@ -280,7 +279,6 @@ module JSONAPI
             'Must provide `is_collection: true` to `serialize` when serializing collections.')
         end
         # Have single object.
-        passthrough_options[:serializer] ||= find_serializer_class(objects)
         primary_data = serialize_primary(objects, passthrough_options)
       end
       result = {
@@ -314,7 +312,7 @@ module JSONAPI
     end
 
     def self.serialize_primary(object, options = {})
-      serializer_class = options.fetch(:serializer)
+      serializer_class = options[:serializer] || find_serializer_class(object)
 
       # Spec: Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources.
