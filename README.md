@@ -24,6 +24,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
 * [Rails example](#rails-example)
+* [Sinatra example](#sinatra-example)
 * [Unfinished business](#unfinished-business)
 * [Contributing](#contributing)
 
@@ -537,6 +538,104 @@ end
 # Rails 5 moved DEFAULT_PARSERS
 ActionDispatch::Http::Parameters::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MIMETYPE)] = lambda do |body|
   JSON.parse(body)
+end
+```
+
+## Sinatra example
+
+Using [Sequel ORM](http://sequel.jeremyevans.net) instead of ActiveRecord. The
+important things to note here are the `:tactical_eager_loading` plugin, which
+will greatly reduce the number of queries performed when sideloading related
+records, and the `:skip_collection_check` option that must be set to true in
+order for `JSONAPI::Serializer.serialize` to be able to serialize single
+Sequel::Model instances.
+
+```ruby
+require 'sequel'
+require 'sinatra/base'
+require 'json/ext'
+require 'jsonapi-serializers'
+
+class Post < Sequel::Model
+  plugin :tactical_eager_loading
+
+  one_to_many :comments
+end
+
+class Comment < Sequel::Model
+  many_to_one :post
+end
+
+class BaseSerializer
+  include JSONAPI::Serializer
+
+  def self_link
+    "/api/v1#{super}"
+  end
+end
+
+class PostSerializer < BaseSerializer
+  attribute :title
+  attribute :content
+
+  has_many :comments
+end
+
+class CommentSerializer < BaseSerializer
+  attribute :username
+  attribute :body
+
+  has_one :post
+end
+
+module Api
+  class V1 < Sinatra::Base
+    configure do
+      mime_type :jsonapi, 'application/vnd.api+json'
+
+      set :database, Sequel.connect
+    end
+
+    helpers do
+      # Parse the body of the request depending on its content-type:
+      def parse_request_body
+        request.body.rewind
+
+        case request.content_type
+        when /json$/, /javascript$/
+          JSON.parse(request.body.read, symbolize_names: true)
+        end
+      end
+
+      # Convenience methods for serializing models:
+      def serialize_model(model, options = {})
+        options[:is_collection] = false
+        options[:skip_collection_check] = true
+        JSONAPI::Serializer.serialize(model, options)
+      end
+
+      def serialize_models(models, options = {})
+        options[:is_collection] = true
+        JSONAPI::Serializer.serialize(models, options)
+      end
+    end
+
+    before do
+      @data = parse_request_body if request.body.size > 0
+    end
+
+    get '/posts', provides: :jsonapi do
+      posts = Post.all
+      not_found if posts.empty?
+      serialize_models(posts).to_json
+    end
+
+    get '/posts/:id', provides: :jsonapi do
+      post = Post[params[:id]]
+      not_found if post.nil?
+      serialize_model(post, include: 'comments').to_json
+    end
+  end
 end
 ```
 
