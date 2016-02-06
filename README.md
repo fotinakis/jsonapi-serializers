@@ -648,6 +648,7 @@ end
 
 ## Release notes
 
+* v0.6.0: Support for polymorphic collections and inheriting serializer attributes.
 * v0.5.0: Support for explicit serializer discovery.
 * v0.4.0: Support for declaring multiple `attributes`.
 * v0.3.1: Improve performance of loading included relationships.
