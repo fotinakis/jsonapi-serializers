@@ -3,6 +3,17 @@ module JSONAPI
     def self.included(target)
       target.send(:include, InstanceMethods)
       target.extend ClassMethods
+
+      target.class_eval do
+        def self.inherited(target)
+          [:attributes_map, :to_one_associations, :to_many_associations]
+            .each{|k|
+              key = "@#{k}"
+              attr = self.instance_variable_get(key)
+              target.instance_variable_set(key, attr.dup) if attr
+            }
+        end
+      end
     end
 
     module InstanceMethods

@@ -7,6 +7,15 @@ module MyApp
     attr_accessor :long_comments
   end
 
+  class TaggedPost
+    attr_accessor :id
+    attr_accessor :title
+    attr_accessor :body
+    attr_accessor :tag
+    attr_accessor :author
+    attr_accessor :long_comments
+  end
+
   class LongComment
     attr_accessor :id
     attr_accessor :body
@@ -137,6 +146,11 @@ module MyApp
     include JSONAPI::Serializer
 
     attributes :title, :body
+  end
+
+  class PostSerializerWithInheritedProperties < PostSerializer
+    # Add only :tag, inherit the rest.
+    attribute :tag
   end
 end
 
