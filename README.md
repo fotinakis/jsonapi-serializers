@@ -543,12 +543,19 @@ end
 
 ## Sinatra example
 
-Using [Sequel ORM](http://sequel.jeremyevans.net) instead of ActiveRecord. The
-important things to note here are the `:tactical_eager_loading` plugin, which
-will greatly reduce the number of queries performed when sideloading related
-records, and the `:skip_collection_check` option that must be set to true in
-order for `JSONAPI::Serializer.serialize` to be able to serialize single
-Sequel::Model instances.
+Here's an example using [Sinatra](http://www.sinatrarb.com) and
+[Sequel ORM](http://sequel.jeremyevans.net) instead of Rails and ActiveRecord.
+The important takeaways here are that:
+
+1. The `:tactical_eager_loading` plugin will greatly reduce the number of
+   queries performed when sideloading associated records. You can add this
+   plugin to a single model (as demonstrated here), or globally to all models.
+   For more information, please see the Sequel
+   [documentation](http://sequel.jeremyevans.net/rdoc-plugins/classes/Sequel/Plugins/TacticalEagerLoading.html).
+1. The `:skip_collection_check` option must be set to true in order for
+   JSONAPI::Serializer to be able to serialize a single Sequel::Model instance.
+1. You should call `#all` on your Sequel::Dataset instances before passing them
+   to JSONAPI::Serializer to greatly reduce the number of queries performed.
 
 ```ruby
 require 'sequel'
@@ -575,15 +582,13 @@ class BaseSerializer
 end
 
 class PostSerializer < BaseSerializer
-  attribute :title
-  attribute :content
+  attributes :title, :content
 
   has_many :comments
 end
 
 class CommentSerializer < BaseSerializer
-  attribute :username
-  attribute :body
+  attributes :username, :content
 
   has_one :post
 end
@@ -642,7 +647,6 @@ end
 ## Unfinished business
 
 * Support for passing `context` through to serializers is partially complete, but needs more work.
-* Support for a `serializer_class` attribute on objects that overrides serializer discovery, would love a PR contribution for this.
 * Support for the `fields` spec is planned, would love a PR contribution for this.
 * Support for pagination/sorting is unlikely to be supported because it would likely involve coupling to ActiveRecord, but please open an issue if you have ideas of how to support this generically.
 
