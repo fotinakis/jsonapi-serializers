@@ -531,23 +531,23 @@ describe JSONAPI::Serializer do
       long_comments.each { |c| c.post = post }
 
       expected_data = {
-        # Note that in this case the primary data does not include linkage for 'long-comments',
-        # forcing clients to still have to request linkage from long-comments and post. This is an
-        # odd but valid data state because the user requested to only include the leaf author node,
-        # and we only automatically expose direct children linkages if they match given includes.
-        #
-        # Spec: Resource linkage in a compound document allows a client to link together
-        # all of the included resource objects without having to GET any relationship URLs.
-        # http://jsonapi.org/format/#document-structure-resource-relationships
-        #
-        # Also, spec: A request for comments.author should not automatically also include
-        # comments in the response. This can happen if the client already has the comments locally,
-        # and now wants to fetch the associated authors without fetching the comments again.
-        # http://jsonapi.org/format/#fetching-includes
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
-          # Only the author is included:
-          serialize_primary(post.author, {serializer: MyAppOtherNamespace::UserSerializer}),
+          # Intermediates are included: long-comments, long-comments.post, and long-comments.post.author
+          #  http://jsonapi.org/format/#document-structure-compound-documents
+          serialize_primary(post.long_comments.first, {
+            serializer: MyApp::LongCommentSerializer,
+            include_linkages: ['post']
+          }),
+          serialize_primary(post.long_comments.last, {
+            serializer: MyApp::LongCommentSerializer,
+            include_linkages: ['post']
+          }),
+          serialize_primary(post, {
+            serializer: MyApp::PostSerializer,
+            include_linkages: ['author', 'post.long-comments', ]
+          }),
+          serialize_primary(post.author, {serializer: MyAppOtherNamespace::UserSerializer})
         ],
       }
       includes = ['long-comments.post.author']
@@ -568,13 +568,21 @@ describe JSONAPI::Serializer do
       long_comments.each { |c| c.post = post }
 
       expected_data = {
-        # Same note about primary data linkages as above.
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
         'included' => [
+          serialize_primary(first_comment, {
+            serializer: MyApp::LongCommentSerializer,
+            include_linkages: ['user']
+          }),
+          serialize_primary(second_comment, {
+            serializer: MyApp::LongCommentSerializer,
+            include_linkages: ['user']
+          }),
           serialize_primary(first_user, {serializer: MyAppOtherNamespace::UserSerializer}),
           serialize_primary(second_user, {serializer: MyAppOtherNamespace::UserSerializer}),
         ],
       }
+
       includes = ['long-comments.user']
       actual_data = JSONAPI::Serializer.serialize(post, include: includes)
 
@@ -625,8 +633,18 @@ describe JSONAPI::Serializer do
       expected_data = {
         'data' => expected_primary_data,
         'included' => [
-          serialize_primary(long_comments.first, {serializer: MyApp::LongCommentSerializer}),
-          serialize_primary(long_comments.last, {serializer: MyApp::LongCommentSerializer}),
+          serialize_primary(long_comments.first, {
+            serializer: MyApp::LongCommentSerializer,
+            include_linkages: ['post'],
+          }),
+          serialize_primary(long_comments.last, {
+            serializer: MyApp::LongCommentSerializer,
+            include_linkages: ['post'],
+          }),
+          serialize_primary(post, {
+            serializer: MyApp::PostSerializer,
+            include_linkages: ['author'],
+          }),
           serialize_primary(post.author, {serializer: MyAppOtherNamespace::UserSerializer}),
         ],
       }
@@ -684,7 +702,7 @@ describe JSONAPI::Serializer do
     it 'correctly handles multi-level relationship paths' do
       result = JSONAPI::Serializer.send(:parse_relationship_paths, ['foo.bar'])
       expect(result).to eq({
-        'foo' => {'bar' => {_include: true}}
+        'foo' => {_include: true, 'bar' => {_include: true}}
       })
     end
     it 'correctly handles multi-level relationship paths with same parent' do
@@ -713,7 +731,7 @@ describe JSONAPI::Serializer do
       paths = ['foo', 'foo.bar.baz']
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
       expect(result).to eq({
-        'foo' => {_include: true, 'bar' => {'baz' => {_include: true}}}
+        'foo' => {_include: true, 'bar' => {_include: true, 'baz' => {_include: true}}}
       })
     end
   end

@@ -466,12 +466,9 @@ module JSONAPI
     def self.merge_relationship_path(path, data)
       parts = path.split('.', 2)
       current_level = parts[0].strip
-      data[current_level] ||= {}
+      data[current_level] ||= {_include: true}
 
-      if parts.length == 1
-        # Leaf node.
-        data[current_level].merge!({_include: true})
-      elsif parts.length == 2
+      if parts.length == 2
         # Need to recurse more.
         merge_relationship_path(parts[1], data[current_level])
       end
