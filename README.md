@@ -652,6 +652,7 @@ end
 
 ## Release notes
 
+* v0.6.1: Spec compliance fix, include intermediate resources on compound documents.
 * v0.6.0: Support for polymorphic collections and inheriting serializer attributes.
 * v0.5.0: Support for explicit serializer discovery.
 * v0.4.0: Support for declaring multiple `attributes`.
