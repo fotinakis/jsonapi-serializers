@@ -382,7 +382,7 @@ module JSONAPI
             "'#{attribute_name}' is not a valid include.")
         end
 
-        if attribute_name.include?('_')
+        if attribute_name != serializer.format_name(attribute_name)
           expected_name = serializer.format_name(attribute_name)
 
           raise JSONAPI::Serializer::InvalidIncludeError.new(
