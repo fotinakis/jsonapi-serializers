@@ -32,6 +32,14 @@ module MyApp
     end
   end
 
+  class UnderscoreTest
+    attr_accessor :id
+
+    def tagged_posts
+      []
+    end
+  end
+
   class PostSerializer
     include JSONAPI::Serializer
 
@@ -42,6 +50,16 @@ module MyApp
 
     has_one :author
     has_many :long_comments
+  end
+
+  class UnderscoreTestSerializer
+    include JSONAPI::Serializer
+
+    has_many :tagged_posts
+
+    def format_name(attribute_name)
+      attribute_name.to_s.underscore
+    end
   end
 
   class LongCommentSerializer
