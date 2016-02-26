@@ -852,7 +852,7 @@ describe JSONAPI::Serializer do
     it 'raises an exception when join character is invalid' do
       expect do
         JSONAPI::Serializer.serialize(create(:post), include: 'long_comments');
-      end.to raise_error(JSONAPI::Serializer::InvalidIncludeError, "'long_comments' is not a valid include.  Did you mean 'long-comments' ?")
+      end.to raise_error(JSONAPI::Serializer::InvalidIncludeError)
 
       expect do
         JSONAPI::Serializer.serialize(create(:post), include: 'long-comments');
@@ -860,7 +860,7 @@ describe JSONAPI::Serializer do
 
       expect do
         JSONAPI::Serializer.serialize(create(:underscore_test), include: 'tagged-posts');
-      end.to raise_error(JSONAPI::Serializer::InvalidIncludeError, "'tagged-posts' is not a valid include.  Did you mean 'tagged_posts' ?")
+      end.to raise_error(JSONAPI::Serializer::InvalidIncludeError)
 
       expect do
         JSONAPI::Serializer.serialize(create(:underscore_test), include: 'tagged_posts');
