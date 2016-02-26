@@ -652,6 +652,7 @@ end
 
 ## Release notes
 
+* v0.6.3: Fix support for underscore-formatted attribute names.
 * v0.6.2: Internal style updates and performance fixes.
 * v0.6.1: Spec compliance fix, include intermediate resources on compound documents.
 * v0.6.0: Support for polymorphic collections and inheriting serializer attributes.
