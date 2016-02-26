@@ -36,4 +36,9 @@ FactoryGirl.define do
     sequence(:id) {|n| n }
     sequence(:name) {|n| "User ##{n}"}
   end
+
+  factory :underscore_test, class: MyApp::UnderscoreTest do
+    skip_create
+    sequence(:id) {|n| n }
+  end
 end
