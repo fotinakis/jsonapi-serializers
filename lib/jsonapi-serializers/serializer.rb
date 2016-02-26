@@ -85,7 +85,8 @@ module JSONAPI
 
       def links
         data = {}
-        data.merge!({'self' => self_link}) if self_link
+        data['self'] = self_link if self_link
+        data
       end
 
       def relationships
@@ -107,15 +108,13 @@ module JSONAPI
               # Spec: Resource linkage MUST be represented as one of the following:
               # - null for empty to-one relationships.
               # http://jsonapi.org/format/#document-structure-resource-relationships
-              data[formatted_attribute_name].merge!({'data' => nil})
+              data[formatted_attribute_name]['data'] = nil
             else
               related_object_serializer = JSONAPI::Serializer.find_serializer(object)
-              data[formatted_attribute_name].merge!({
-                'data' => {
-                  'type' => related_object_serializer.type.to_s,
-                  'id' => related_object_serializer.id.to_s,
-                },
-              })
+              data[formatted_attribute_name]['data'] = {
+                'type' => related_object_serializer.type.to_s,
+                'id' => related_object_serializer.id.to_s,
+              }
             end
           end
         end
@@ -136,7 +135,7 @@ module JSONAPI
           # - an array of linkage objects for non-empty to-many relationships.
           # http://jsonapi.org/format/#document-structure-resource-relationships
           if @_include_linkages.include?(formatted_attribute_name)
-            data[formatted_attribute_name].merge!({'data' => []})
+            data[formatted_attribute_name]['data'] = []
             objects = has_many_relationship(attribute_name, attr_data) || []
             objects.each do |obj|
               related_object_serializer = JSONAPI::Serializer.find_serializer(obj)
@@ -323,15 +322,19 @@ module JSONAPI
       data = {
         'id' => serializer.id.to_s,
         'type' => serializer.type.to_s,
-        'attributes' => serializer.attributes,
       }
 
       # Merge in optional top-level members if they are non-nil.
       # http://jsonapi.org/format/#document-structure-resource-objects
-      data.merge!({'attributes' => serializer.attributes}) if !serializer.attributes.nil?
-      data.merge!({'links' => serializer.links}) if !serializer.links.nil?
-      data.merge!({'relationships' => serializer.relationships}) unless serializer.relationships.empty?
-      data.merge!({'meta' => serializer.meta}) if !serializer.meta.nil?
+      # Call the methods once now to avoid calling them twice when evaluating the if's below.
+      attributes = serializer.attributes
+      links = serializer.links
+      relationships = serializer.relationships
+      meta = serializer.meta
+      data['attributes'] = attributes if !attributes.nil?
+      data['links'] = links if !links.nil?
+      data['relationships'] = relationships if !relationships.empty?
+      data['meta'] = meta if !meta.nil?
       data
     end
     class << self; protected :serialize_primary; end
