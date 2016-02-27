@@ -606,7 +606,7 @@ module Api
       def parse_request_body
         request.body.rewind
 
-        case request.content_type
+        case request.content_type && request.content_type[/^([^;]+)/]
         when /json$/, /javascript$/
           JSON.parse(request.body.read, symbolize_names: true)
         end
@@ -636,7 +636,7 @@ module Api
     end
 
     get '/posts/:id', provides: :jsonapi do
-      post = Post[params[:id]]
+      post = Post[params[:id].to_i]
       not_found if post.nil?
       serialize_model(post, include: 'comments').to_json
     end
