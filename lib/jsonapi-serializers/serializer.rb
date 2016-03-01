@@ -332,7 +332,7 @@ module JSONAPI
       relationships = serializer.relationships
       meta = serializer.meta
       data['attributes'] = attributes if !attributes.nil?
-      data['links'] = links if !links.nil?
+      data['links'] = links if !links.empty?
       data['relationships'] = relationships if !relationships.empty?
       data['meta'] = meta if !meta.nil?
       data

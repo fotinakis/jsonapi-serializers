@@ -131,6 +131,10 @@ module MyApp
     has_one :author
     has_many :long_comments
 
+    def self_link
+      nil
+    end
+
     def relationship_self_link(attribute_name)
       nil
     end
