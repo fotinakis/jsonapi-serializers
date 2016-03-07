@@ -314,7 +314,6 @@ describe JSONAPI::Serializer do
       expect(primary_data).to eq({
         'id' => '1',
         'type' => 'posts',
-        'attributes' => {},
         'links' => {
           'self' => '/posts/1',
         },
