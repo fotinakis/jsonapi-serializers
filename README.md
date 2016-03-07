@@ -652,6 +652,7 @@ end
 
 ## Release notes
 
+* v0.6.5: Exclude attributes when empty.
 * v0.6.4: Fix regression of including links when empty.
 * v0.6.3: Fix support for underscore-formatted attribute names.
 * v0.6.2: Internal style updates and performance fixes.
