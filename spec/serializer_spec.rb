@@ -385,14 +385,14 @@ describe JSONAPI::Serializer do
       post = create(:post)
       errors = [
         {
-          "source": { "pointer": "/data/attributes/first-name" },
-          "title": "Invalid Attribute",
-          "detail": "First name must contain at least three characters."
+          "source" => { "pointer" => "/data/attributes/first-name" },
+          "title" => "Invalid Attribute",
+          "detail" => "First name must contain at least three characters."
         },
         {
-          "source": { "pointer": "/data/attributes/first-name" },
-          "title": "Invalid Attribute",
-          "detail": "First name must contain an emoji."
+          "source" => { "pointer" => "/data/attributes/first-name" },
+          "title" => "Invalid Attribute",
+          "detail" => "First name must contain an emoji."
         }
       ]
       expect(JSONAPI::Serializer.serialize(post, errors: errors)).to eq({

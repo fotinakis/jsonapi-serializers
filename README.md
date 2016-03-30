@@ -19,6 +19,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [More customizations](#more-customizations)
   * [Base URL](#base-url)
   * [Root metadata](#root-metadata)
+  * [Root errors](#root-errors)
   * [Explicit serializer discovery](#explicit-serializer-discovery)
 * [Relationships](#relationships)
   * [Compound documents and includes](#compound-documents-and-includes)
