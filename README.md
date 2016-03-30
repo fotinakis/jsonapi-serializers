@@ -315,6 +315,15 @@ You can pass a `meta` argument to specify top-level metadata:
 JSONAPI::Serializer.serialize(post, meta: {copyright: 'Copyright 2015 Example Corp.'})
 ```
 
+### Root errors
+
+You can pass an `errors` argument to specify top-level errors:
+
+```ruby
+errors = [{ "title": "Invalid Attribute", "detail": "First name must contain at least three characters." }]
+JSONAPI::Serializer.serialize(post, errors: errors)
+```
+
 ### Explicit serializer discovery
 
 By default, jsonapi-serializers assumes that the serializer class for `Namespace::User` is `Namespace::UserSerializer`. You can override this behavior on a per-object basis by implementing the `jsonapi_serializer_class_name` method.

@@ -381,6 +381,25 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+    it 'can include a top level errors node' do
+      post = create(:post)
+      errors = [
+        {
+          "source": { "pointer": "/data/attributes/first-name" },
+          "title": "Invalid Attribute",
+          "detail": "First name must contain at least three characters."
+        },
+        {
+          "source": { "pointer": "/data/attributes/first-name" },
+          "title": "Invalid Attribute",
+          "detail": "First name must contain an emoji."
+        }
+      ]
+      expect(JSONAPI::Serializer.serialize(post, errors: errors)).to eq({
+        'errors' => errors,
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
+      })
+    end
     it 'can serialize a single object with an `each` method by passing skip_collection_check: true' do
       post = create(:post)
       post.define_singleton_method(:each) do

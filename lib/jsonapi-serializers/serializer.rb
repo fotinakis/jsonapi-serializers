@@ -234,6 +234,7 @@ module JSONAPI
       options[:skip_collection_check] = options.delete('skip_collection_check') || options[:skip_collection_check] || false
       options[:base_url] = options.delete('base_url') || options[:base_url]
       options[:meta] = options.delete('meta') || options[:meta]
+      options[:errors] = options.delete('errors') || options[:errors]
 
       # Normalize includes.
       includes = options[:include]
@@ -284,6 +285,7 @@ module JSONAPI
         'data' => primary_data,
       }
       result['meta'] = options[:meta] if options[:meta]
+      result['errors'] = options[:errors] if options[:errors]
 
       # If 'include' relationships are given, recursively find and include each object.
       if includes
