@@ -400,11 +400,8 @@ module JSONAPI
         # We're finding relationships for compound documents, so skip anything that doesn't exist.
         next if object.nil?
 
-        # We only include parent values if the sential value _include is set. This satifies the
-        # spec note: A request for comments.author should not automatically also include comments
-        # in the response. This can happen if the client already has the comments locally, and now
-        # wants to fetch the associated authors without fetching the comments again.
-        # http://jsonapi.org/format/#fetching-includes
+        # Full linkage: a request for comments.author MUST automatically include comments
+        # in the response.
         objects = is_collection ? object : [object]
         if child_inclusion_tree[:_include] == true
           # Include the current level objects if the _include attribute exists.
