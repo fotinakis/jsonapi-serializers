@@ -21,6 +21,11 @@ module MyApp
     attr_accessor :body
     attr_accessor :user
     attr_accessor :post
+
+    # Just a copy of the default implementation, we need this to exist to be able to stub in tests.
+    def jsonapi_serializer_class_name
+      'MyApp::LongCommentSerializer'
+    end
   end
 
   class User
@@ -108,7 +113,7 @@ module MyApp
     end
   end
 
-  class PostSerializerWithContextHandling < SimplestPostSerializer
+  class PostSerializerWithContext < PostSerializer
     attribute :body, if: :show_body?, unless: :hide_body?
 
     def show_body?
@@ -119,6 +124,22 @@ module MyApp
       context.fetch(:hide_body, false)
     end
   end
+
+  class LongCommentsSerializerWithContext
+    include JSONAPI::Serializer
+
+    attribute :body, if: :show_body?
+    has_one :user, if: :show_comments_user?
+
+    def show_body?
+      context.fetch(:show_body, true)
+    end
+
+    def show_comments_user?
+      context.fetch(:show_comments_user, true)
+    end
+  end
+
 
   class PostSerializerWithoutLinks
     include JSONAPI::Serializer

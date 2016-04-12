@@ -753,7 +753,7 @@ describe JSONAPI::Serializer do
   describe 'if/unless handling with contexts' do
     it 'can be used to show/hide attributes' do
       post = create(:post)
-      options = {serializer: MyApp::PostSerializerWithContextHandling}
+      options = {serializer: MyApp::PostSerializerWithContext}
 
       options[:context] = {show_body: false}
       data = JSONAPI::Serializer.serialize(post, options)
@@ -794,7 +794,36 @@ describe JSONAPI::Serializer do
     end
   end
   describe 'context' do
-    xit 'is correctly passed through all serializers' do
+    it 'is passed through all relationship serializers' do
+      # Force long_comments to be serialized by the context-sensitive serializer.
+      expect_any_instance_of(MyApp::LongComment).to receive(:jsonapi_serializer_class_name)
+        .at_least(:once)
+        .and_return('MyApp::LongCommentsSerializerWithContext')
+
+      user = create(:user, name: 'Long Comment Author -- Should Not Be Serialized')
+      long_comment = create(:long_comment, user: user)
+      post = create(:post, :with_author, long_comments: [long_comment])
+
+      context = {show_body: false, show_comments_user: false}
+      expected_data = {
+        'data' => serialize_primary(post, {
+          serializer: MyApp::PostSerializerWithContext,
+          include_linkages: ['long-comments'],
+          context: context,
+        }),
+        'included' => [
+          serialize_primary(long_comment, {
+            serializer: MyApp::LongCommentsSerializerWithContext,
+            context: context,
+          }),
+        ],
+      }
+      includes = ['long-comments']
+      actual_data = JSONAPI::Serializer.serialize(post, context: context, include: includes)
+      # Multiple expectations for better diff output for debugging.
+      expect(actual_data['data']).to eq(expected_data['data'])
+      expect(actual_data['included']).to eq(expected_data['included'])
+      expect(actual_data).to eq(expected_data)
     end
   end
 
