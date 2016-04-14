@@ -318,11 +318,11 @@ JSONAPI::Serializer.serialize(post, meta: {copyright: 'Copyright 2015 Example Co
 
 ### Root errors
 
-You can pass an `errors` argument to specify top-level errors:
+You can use `serialize_errors` method in order to specify top-level errors:
 
 ```ruby
 errors = [{ "title": "Invalid Attribute", "detail": "First name must contain at least three characters." }]
-JSONAPI::Serializer.serialize(post, errors: errors)
+JSONAPI::Serializer.serialize_errors(errors)
 ```
 
 ### Explicit serializer discovery

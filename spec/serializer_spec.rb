@@ -381,7 +381,7 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
-    it 'can include a top level errors node' do
+    it 'can include a top level errors node - deprecated' do
       post = create(:post)
       errors = [
         {
@@ -399,6 +399,21 @@ describe JSONAPI::Serializer do
         'errors' => errors,
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
+    end
+    it 'can include a top level errors node' do
+      errors = [
+        {
+          "source" => { "pointer" => "/data/attributes/first-name" },
+          "title" => "Invalid Attribute",
+          "detail" => "First name must contain at least three characters."
+        },
+        {
+          "source" => { "pointer" => "/data/attributes/first-name" },
+          "title" => "Invalid Attribute",
+          "detail" => "First name must contain an emoji."
+        }
+      ]
+      expect(JSONAPI::Serializer.serialize_errors(errors)).to eq({'errors' => errors})
     end
     it 'can serialize a single object with an `each` method by passing skip_collection_check: true' do
       post = create(:post)

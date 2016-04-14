@@ -235,6 +235,8 @@ module JSONAPI
       options[:skip_collection_check] = options.delete('skip_collection_check') || options[:skip_collection_check] || false
       options[:base_url] = options.delete('base_url') || options[:base_url]
       options[:meta] = options.delete('meta') || options[:meta]
+
+      # Deprecated: use serialize_errors method instead
       options[:errors] = options.delete('errors') || options[:errors]
 
       # Normalize includes.
@@ -312,6 +314,10 @@ module JSONAPI
         end
       end
       result
+    end
+
+    def self.serialize_errors(errors)
+      {'errors' => errors}
     end
 
     def self.serialize_primary(object, options = {})
