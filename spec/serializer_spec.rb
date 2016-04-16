@@ -1,3 +1,7 @@
+require 'active_model/errors'
+require 'active_model/naming'
+require 'active_model/translation'
+
 describe JSONAPI::Serializer do
   def serialize_primary(object, options = {})
     # Note: intentional high-coupling to protected method for tests.
@@ -350,6 +354,65 @@ describe JSONAPI::Serializer do
     end
   end
 
+  # The members data and errors MUST NOT coexist in the same document.
+  describe 'JSONAPI::Serializer.serialize_errors' do
+    it 'can include a top level errors node' do
+      errors = [
+        {
+          'source' => { 'pointer' => '/data/attributes/first-name' },
+          'title' => 'Invalid Attribute',
+          'detail' => 'First name must contain at least three characters.'
+        },
+        {
+          'source' => { 'pointer' => '/data/attributes/first-name' },
+          'title' => 'Invalid Attribute',
+          'detail' => 'First name must contain an emoji.'
+        }
+      ]
+      expect(JSONAPI::Serializer.serialize_errors(errors)).to eq({'errors' => errors})
+    end
+
+    it 'works for active_record' do
+      # DummyUser exists so we can test calling user.errors.to_hash(full_messages: true)
+      class DummyUser
+        extend ActiveModel::Naming
+        extend ActiveModel::Translation
+
+        def initialize
+          @errors = ActiveModel::Errors.new(self)
+          @errors.add(:email, :invalid, message: 'is invalid')
+          @errors.add(:email, :blank, message: "can't be blank")
+          @errors.add(:first_name, :blank, message: "can't be blank")
+        end
+
+        attr_accessor :first_name, :email
+        attr_reader :errors
+
+        def read_attribute_for_validation(attr)
+          send(attr)
+        end
+      end
+      user = DummyUser.new
+      jsonapi_errors = [
+        {
+          'source' => { 'pointer' => '/data/attributes/email' },
+          'detail' => 'Email is invalid'
+        },
+        {
+          'source' => { 'pointer' => '/data/attributes/email' },
+          'detail' => "Email can't be blank"
+        },
+        {
+          'source' => { 'pointer' => '/data/attributes/first-name' },
+          'detail' => "First name can't be blank"
+        }
+      ]
+      expect(JSONAPI::Serializer.serialize_errors(user.errors)).to eq({
+        'errors' => jsonapi_errors,
+      })
+    end
+  end
+
   describe 'JSONAPI::Serializer.serialize' do
     # The following tests rely on the fact that serialize_primary has been tested above, so object
     # primary data is not explicitly tested here. If things are broken, look above here first.
@@ -381,6 +444,7 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+    # TODO: remove this code on next major release
     it 'can include a top level errors node - deprecated' do
       post = create(:post)
       errors = [
@@ -399,21 +463,6 @@ describe JSONAPI::Serializer do
         'errors' => errors,
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
-    end
-    it 'can include a top level errors node' do
-      errors = [
-        {
-          "source" => { "pointer" => "/data/attributes/first-name" },
-          "title" => "Invalid Attribute",
-          "detail" => "First name must contain at least three characters."
-        },
-        {
-          "source" => { "pointer" => "/data/attributes/first-name" },
-          "title" => "Invalid Attribute",
-          "detail" => "First name must contain an emoji."
-        }
-      ]
-      expect(JSONAPI::Serializer.serialize_errors(errors)).to eq({'errors' => errors})
     end
     it 'can serialize a single object with an `each` method by passing skip_collection_check: true' do
       post = create(:post)

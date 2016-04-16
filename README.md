@@ -325,6 +325,27 @@ errors = [{ "title": "Invalid Attribute", "detail": "First name must contain at 
 JSONAPI::Serializer.serialize_errors(errors)
 ```
 
+If you are using Rails models (ActiveModel by default), you can pass in an object's errors:
+
+```ruby
+JSONAPI::Serializer.serialize_errors(user.errors)
+```
+
+A more complete usage example (assumes ActiveModel):
+
+```
+class Api::V1::ReposController < Api::V1::BaseController
+  def create
+    post = Post.create(post_params)
+    if post.errors
+      render json: JSONAPI::Serializer.serialize_errors(post.errors)
+    else
+      render json: JSONAPI::Serializer.serialize(post)
+    end
+  end
+end
+```
+
 ### Explicit serializer discovery
 
 By default, jsonapi-serializers assumes that the serializer class for `Namespace::User` is `Namespace::UserSerializer`. You can override this behavior on a per-object basis by implementing the `jsonapi_serializer_class_name` method.
