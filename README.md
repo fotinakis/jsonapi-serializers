@@ -333,7 +333,7 @@ JSONAPI::Serializer.serialize_errors(user.errors)
 
 A more complete usage example (assumes ActiveModel):
 
-```
+```ruby
 class Api::V1::ReposController < Api::V1::BaseController
   def create
     post = Post.create(post_params)
