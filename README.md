@@ -675,34 +675,14 @@ module Api
 end
 ```
 
+## Changelog
+
+See [Releases](https://github.com/fotinakis/jsonapi-serializers/releases).
+
 ## Unfinished business
 
-* Support for passing `context` through to serializers is partially complete, but needs more work.
 * Support for the `fields` spec is planned, would love a PR contribution for this.
 * Support for pagination/sorting is unlikely to be supported because it would likely involve coupling to ActiveRecord, but please open an issue if you have ideas of how to support this generically.
-
-## Release notes
-
-* v0.9.0: Add initial `serialize_errors` support.
-* v0.8.0: Pass context through recursive relationships.
-* v0.7.0: Support for root error objects.
-* v0.6.5: Exclude attributes when empty.
-* v0.6.4: Fix regression of including links when empty.
-* v0.6.3: Fix support for underscore-formatted attribute names.
-* v0.6.2: Internal style updates and performance fixes.
-* v0.6.1: Spec compliance fix, include intermediate resources on compound documents.
-* v0.6.0: Support for polymorphic collections and inheriting serializer attributes.
-* v0.5.0: Support for explicit serializer discovery.
-* v0.4.0: Support for declaring multiple `attributes`.
-* v0.3.1: Improve performance of loading included relationships.
-* v0.3.0: Add top-level `meta` support.
-* v0.2.6: Add `base_url` support.
-* v0.2.5: Allow disabling ambiguous collection checks for Sequel support.
-* v0.2.4: Improve handling for nil relationship links.
-* v0.2.3: Support serializers with no attributes.
-* v0.2.2: Compliance fix for excluding empty relationship objects.
-* v0.2.1: Compliance fix for self links.
-* v0.2.0: Initial release with support for the final v1 JSON API spec.
 
 ## Contributing
 
