@@ -392,47 +392,40 @@ Note that when serializing a post, the `author` association will come from the `
 
 Because the full class name is used when discovering serializers, JSONAPI::Serializers works with any custom namespaces you might have, like a Rails Engine or standard Ruby module namespace.
 
-### Links and data for relationships
+### Control `links` and `data` for relationships
 
-Customization of the `relationships` representation (including the `data` with `id` and `type` or excluding `links` completely) can be done by specyfing `include_links` / `include_data` options for each relationship.
+The JSON API spec allows relationships objects to contain `links`, `data`, or both.
+
+By default, `links` are included relationships. You can remove links for a specific relationship by passing `include_links: false` to `has_one` or `has_many`. For example:
 
 ```ruby
-class PostSerializer < BaseSerializer
-  attribute :title
-
-  has_one :author, include_data: true
-  has_many :comments, include_links: false
-end
+has_many :comments, include_links: false  # Default is include_links: true.
 ```
 
-Returns:
+
+
+By default, `data` is excluded in each relationship. You can enable data for a specific relationship by passing `include_data: true` to `has_one` or `has_many`. For example:
+
+```ruby
+has_one :author, include_data: true  # Default is include_data: false.
+```
+
+Notice that linkage data is now included for the `author` relationship:
 
 ```json
-{
-  "data": {
-    "id": "1",
-    "type": "posts",
-    "attributes": {
-      "title": "Hello World"
-    },
-    "links": {
-      "self": "http://example.com/posts/1"
-    },
-    "relationships": {
-      "author": {
-        "links": {
-          "self": "http://example.com/posts/1/relationships/author",
-          "related": "http://example.com/posts/1/author"
-        },
-        "data": {
-          "type": "users",
-          "id": "1"
-        }
-      },
-      "comments": {}
-    }
-  }
-}
+...
+   "relationships": {
+     "author": {
+       "links": {
+         "self": "http://example.com/posts/1/relationships/author",
+         "related": "http://example.com/posts/1/author"
+       },
+       "data": {
+         "type": "users",
+         "id": "1"
+       }
+     }
+...
 ```
 
 ### Compound documents and includes
