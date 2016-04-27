@@ -24,6 +24,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
 * [Relationships](#relationships)
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
+  * [Control links and data in relationships](#control-links-and-data-in-relationships)
 * [Rails example](#rails-example)
 * [Sinatra example](#sinatra-example)
 * [Unfinished business](#unfinished-business)
@@ -392,55 +393,6 @@ Note that when serializing a post, the `author` association will come from the `
 
 Because the full class name is used when discovering serializers, JSONAPI::Serializers works with any custom namespaces you might have, like a Rails Engine or standard Ruby module namespace.
 
-### Control `links` and `data` for relationships
-
-The JSON API spec allows relationships objects to contain `links`, `data`, or both.
-
-By default, `links` are included in each relationship. You can remove links for a specific relationship by passing `include_links: false` to `has_one` or `has_many`. For example:
-
-```ruby
-has_many :comments, include_links: false  # Default is include_links: true.
-```
-
-Notice that `links` are now excluded for the `comments` relationship:
-
-```json
-...
-   "relationships": {
-     "author": {
-       "links": {
-         "self": "http://example.com/posts/1/relationships/author",
-         "related": "http://example.com/posts/1/author"
-       }
-     },
-     "comments": {}
-...
-```
-
-By default, `data` is excluded in each relationship. You can enable data for a specific relationship by passing `include_data: true` to `has_one` or `has_many`. For example:
-
-```ruby
-has_one :author, include_data: true  # Default is include_data: false.
-```
-
-Notice that linkage data is now included for the `author` relationship:
-
-```json
-...
-   "relationships": {
-     "author": {
-       "links": {
-         "self": "http://example.com/posts/1/relationships/author",
-         "related": "http://example.com/posts/1/author"
-       },
-       "data": {
-         "type": "users",
-         "id": "1"
-       }
-     }
-...
-```
-
 ### Compound documents and includes
 
 > To reduce the number of HTTP requests, servers MAY allow responses that include related resources along with the requested primary resources. Such responses are called "compound documents".
@@ -557,6 +509,55 @@ Notice a few things:
 #### Relationship path handling
 
 The `include` param also accepts a string of [relationship paths](http://jsonapi.org/format/#fetching-includes), ie. `include: 'author,comments,comments.user'` so you can pass an `?include` query param directly through to the serialize method. Be aware that letting users pass arbitrary relationship paths might introduce security issues depending on your authorization setup, where a user could `include` a relationship they might not be authorized to see directly. Be aware of what you allow API users to include.
+
+### Control `links` and `data` in relationships
+
+The JSON API spec allows relationships objects to contain `links`, `data`, or both.
+
+By default, `links` are included in each relationship. You can remove links for a specific relationship by passing `include_links: false` to `has_one` or `has_many`. For example:
+
+```ruby
+has_many :comments, include_links: false  # Default is include_links: true.
+```
+
+Notice that `links` are now excluded for the `comments` relationship:
+
+```json
+...
+   "relationships": {
+     "author": {
+       "links": {
+         "self": "http://example.com/posts/1/relationships/author",
+         "related": "http://example.com/posts/1/author"
+       }
+     },
+     "comments": {}
+...
+```
+
+By default, `data` is excluded in each relationship. You can enable data for a specific relationship by passing `include_data: true` to `has_one` or `has_many`. For example:
+
+```ruby
+has_one :author, include_data: true  # Default is include_data: false.
+```
+
+Notice that linkage data is now included for the `author` relationship:
+
+```json
+...
+   "relationships": {
+     "author": {
+       "links": {
+         "self": "http://example.com/posts/1/relationships/author",
+         "related": "http://example.com/posts/1/author"
+       },
+       "data": {
+         "type": "users",
+         "id": "1"
+       }
+     }
+...
+```
 
 ## Rails example
 
