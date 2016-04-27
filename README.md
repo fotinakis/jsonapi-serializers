@@ -523,16 +523,14 @@ has_many :comments, include_links: false  # Default is include_links: true.
 Notice that `links` are now excluded for the `comments` relationship:
 
 ```json
-...
    "relationships": {
      "author": {
        "links": {
-         "self": "http://example.com/posts/1/relationships/author",
-         "related": "http://example.com/posts/1/author"
+         "self": "/posts/1/relationships/author",
+         "related": "/posts/1/author"
        }
      },
      "comments": {}
-...
 ```
 
 By default, `data` is excluded in each relationship. You can enable data for a specific relationship by passing `include_data: true` to `has_one` or `has_many`. For example:
@@ -544,19 +542,17 @@ has_one :author, include_data: true  # Default is include_data: false.
 Notice that linkage data is now included for the `author` relationship:
 
 ```json
-...
    "relationships": {
      "author": {
        "links": {
-         "self": "http://example.com/posts/1/relationships/author",
-         "related": "http://example.com/posts/1/author"
+         "self": "/posts/1/relationships/author",
+         "related": "/posts/1/author"
        },
        "data": {
          "type": "users",
          "id": "1"
        }
      }
-...
 ```
 
 ## Rails example
