@@ -531,6 +531,7 @@ Notice that `links` are now excluded for the `comments` relationship:
        }
      },
      "comments": {}
+   }
 ```
 
 By default, `data` is excluded in each relationship. You can enable data for a specific relationship by passing `include_data: true` to `has_one` or `has_many`. For example:
