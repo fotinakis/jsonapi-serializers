@@ -352,6 +352,72 @@ describe JSONAPI::Serializer do
         },
       })
     end
+
+    it 'allows to exclude linkages for relationships' do
+      long_comments = create_list(:long_comment, 2)
+      post = create(:post, :with_author, long_comments: long_comments)
+      primary_data = serialize_primary(post, { serializer: MyApp::PostSerializerWithoutIncludeLinks })
+      expect(primary_data).to eq({
+        'id' => '1',
+        'type' => 'posts',
+        'attributes' => {
+          'title' => 'Title for Post 1'
+        },
+        'links' => {
+          'self' => '/posts/1',
+        },
+        'relationships' => {
+          'author' => {
+          },
+          'long-comments' => {
+          },
+        }
+      })
+    end
+
+    it 'allows to include data for relationships' do
+      long_comments = create_list(:long_comment, 2)
+      post = create(:post, :with_author, long_comments: long_comments)
+      primary_data = serialize_primary(post, { serializer: MyApp::PostSerializerWithIncludeData })
+      expect(primary_data).to eq({
+        'id' => '1',
+        'type' => 'posts',
+        'attributes' => {
+          'title' => 'Title for Post 1'
+        },
+        'links' => {
+          'self' => '/posts/1',
+        },
+        'relationships' => {
+          'author' => {
+            'links' => {
+              'self' => '/posts/1/relationships/author',
+              'related' => '/posts/1/author'
+            },
+            'data' => {
+              'type' => 'users',
+              'id' => '1'
+            }
+          },
+          'long-comments' => {
+            'links' => {
+              'self' => '/posts/1/relationships/long-comments',
+              'related' => '/posts/1/long-comments'
+            },
+            'data' => [
+              {
+                'type' => 'long-comments',
+                'id' => '1'
+              },
+              {
+                'type' => 'long-comments',
+                'id' => '2'
+              }
+            ]
+          },
+        }
+      })
+    end
   end
 
   # The members data and errors MUST NOT coexist in the same document.

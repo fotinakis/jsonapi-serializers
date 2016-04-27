@@ -392,6 +392,49 @@ Note that when serializing a post, the `author` association will come from the `
 
 Because the full class name is used when discovering serializers, JSONAPI::Serializers works with any custom namespaces you might have, like a Rails Engine or standard Ruby module namespace.
 
+### Links and data for relationships
+
+Customization of the `relationships` representation (including the `data` with `id` and `type` or excluding `links` completely) can be done by specyfing `include_links` / `include_data` options for each relationship.
+
+```ruby
+class PostSerializer < BaseSerializer
+  attribute :title
+
+  has_one :author, include_data: true
+  has_many :comments, include_links: false
+end
+```
+
+Returns:
+
+```json
+{
+  "data": {
+    "id": "1",
+    "type": "posts",
+    "attributes": {
+      "title": "Hello World"
+    },
+    "links": {
+      "self": "http://example.com/posts/1"
+    },
+    "relationships": {
+      "author": {
+        "links": {
+          "self": "http://example.com/posts/1/relationships/author",
+          "related": "http://example.com/posts/1/author"
+        },
+        "data": {
+          "type": "users",
+          "id": "1"
+        }
+      },
+      "comments": {}
+    }
+  }
+}
+```
+
 ### Compound documents and includes
 
 > To reduce the number of HTTP requests, servers MAY allow responses that include related resources along with the requested primary resources. Such responses are called "compound documents".

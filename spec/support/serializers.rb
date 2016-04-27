@@ -94,7 +94,6 @@ module MyApp
 
   class PostSerializerWithMetadata
     include JSONAPI::Serializer
-    include JSONAPI::Serializer
 
     attribute :title
     attribute :long_content do
@@ -110,6 +109,32 @@ module MyApp
         'copyright' => 'Copyright 2015 Example Corp.',
         'authors' => ['Aliens'],
       }
+    end
+  end
+
+  class PostSerializerWithoutIncludeLinks
+    include JSONAPI::Serializer
+
+    attribute :title
+
+    has_one :author, include_links: false
+    has_many :long_comments, include_links: false
+
+    def type
+      :posts
+    end
+  end
+
+  class PostSerializerWithIncludeData
+    include JSONAPI::Serializer
+
+    attribute :title
+
+    has_one :author, include_data: true
+    has_many :long_comments, include_data: true
+
+    def type
+      :posts
     end
   end
 

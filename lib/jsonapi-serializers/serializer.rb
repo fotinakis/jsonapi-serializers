@@ -97,13 +97,16 @@ module JSONAPI
           formatted_attribute_name = format_name(attribute_name)
 
           data[formatted_attribute_name] = {}
-          links_self = relationship_self_link(attribute_name)
-          links_related = relationship_related_link(attribute_name)
-          data[formatted_attribute_name]['links'] = {} if links_self || links_related
-          data[formatted_attribute_name]['links']['self'] = links_self if links_self
-          data[formatted_attribute_name]['links']['related'] = links_related if links_related
 
-          if @_include_linkages.include?(formatted_attribute_name)
+          if attr_data[:options][:include_links]
+            links_self = relationship_self_link(attribute_name)
+            links_related = relationship_related_link(attribute_name)
+            data[formatted_attribute_name]['links'] = {} if links_self || links_related
+            data[formatted_attribute_name]['links']['self'] = links_self if links_self
+            data[formatted_attribute_name]['links']['related'] = links_related if links_related
+          end
+
+          if @_include_linkages.include?(formatted_attribute_name) || attr_data[:options][:include_data]
             object = has_one_relationship(attribute_name, attr_data)
             if object.nil?
               # Spec: Resource linkage MUST be represented as one of the following:
@@ -125,17 +128,20 @@ module JSONAPI
           formatted_attribute_name = format_name(attribute_name)
 
           data[formatted_attribute_name] = {}
-          links_self = relationship_self_link(attribute_name)
-          links_related = relationship_related_link(attribute_name)
-          data[formatted_attribute_name]['links'] = {} if links_self || links_related
-          data[formatted_attribute_name]['links']['self'] = links_self if links_self
-          data[formatted_attribute_name]['links']['related'] = links_related if links_related
+
+          if attr_data[:options][:include_links]
+            links_self = relationship_self_link(attribute_name)
+            links_related = relationship_related_link(attribute_name)
+            data[formatted_attribute_name]['links'] = {} if links_self || links_related
+            data[formatted_attribute_name]['links']['self'] = links_self if links_self
+            data[formatted_attribute_name]['links']['related'] = links_related if links_related
+          end
 
           # Spec: Resource linkage MUST be represented as one of the following:
           # - an empty array ([]) for empty to-many relationships.
           # - an array of linkage objects for non-empty to-many relationships.
           # http://jsonapi.org/format/#document-structure-resource-relationships
-          if @_include_linkages.include?(formatted_attribute_name)
+          if @_include_linkages.include?(formatted_attribute_name) || attr_data[:options][:include_data]
             data[formatted_attribute_name]['data'] = []
             objects = has_many_relationship(attribute_name, attr_data) || []
             objects.each do |obj|
