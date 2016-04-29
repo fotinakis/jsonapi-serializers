@@ -9,8 +9,8 @@ Gem::Specification.new do |spec|
   spec.authors       = ["Mike Fotinakis"]
   spec.email         = ["mike@fotinakis.com"]
   spec.summary       = %q{Pure Ruby readonly serializers for the JSON:API spec.}
-  spec.description   = %q{}
-  spec.homepage      = ""
+  spec.description   = %q{Pure Ruby readonly serializers for the JSON:API spec.}
+  spec.homepage      = "https://github.com/fotinakis/jsonapi-serializers"
   spec.license       = "MIT"
 
   spec.files         = `git ls-files -z`.split("\x0")
