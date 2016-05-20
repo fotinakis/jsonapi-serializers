@@ -359,9 +359,14 @@ module JSONAPI
 
       serializer = serializer_class.new(object, options)
       data = {
-        'id' => serializer.id.to_s,
         'type' => serializer.type.to_s,
       }
+
+      # "The id member is not required when the resource object originates at the client
+      #  and represents a new resource to be created on the server."
+      # http://jsonapi.org/format/#document-resource-objects
+      # We'll assume that if the id is blank, it means the resource is to be created.
+      data['id'] = serializer.id.to_s if serializer.id && !serializer.id.empty?
 
       # Merge in optional top-level members if they are non-nil.
       # http://jsonapi.org/format/#document-structure-resource-objects
