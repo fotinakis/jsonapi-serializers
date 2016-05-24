@@ -241,6 +241,7 @@ module JSONAPI
       options[:skip_collection_check] = options.delete('skip_collection_check') || options[:skip_collection_check] || false
       options[:base_url] = options.delete('base_url') || options[:base_url]
       options[:meta] = options.delete('meta') || options[:meta]
+      options[:links] = options.delete('links') || options[:links]
 
       # Deprecated: use serialize_errors method instead
       options[:errors] = options.delete('errors') || options[:errors]
@@ -294,6 +295,7 @@ module JSONAPI
         'data' => primary_data,
       }
       result['meta'] = options[:meta] if options[:meta]
+      result['links'] = options[:links] if options[:links]
       result['errors'] = options[:errors] if options[:errors]
 
       # If 'include' relationships are given, recursively find and include each object.

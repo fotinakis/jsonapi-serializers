@@ -526,6 +526,14 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+    it 'can include a top level links node' do
+      post = create(:post)
+      links = {self: 'http://example.com/posts'}
+      expect(JSONAPI::Serializer.serialize(post, links: links)).to eq({
+        'links' => links,
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
+      })
+    end
     # TODO: remove this code on next major release
     it 'can include a top level errors node - deprecated' do
       post = create(:post)
