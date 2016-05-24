@@ -19,6 +19,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [More customizations](#more-customizations)
   * [Base URL](#base-url)
   * [Root metadata](#root-metadata)
+  * [Root links](#root-links)
   * [Root errors](#root-errors)
   * [Explicit serializer discovery](#explicit-serializer-discovery)
 * [Relationships](#relationships)
@@ -315,6 +316,14 @@ You can pass a `meta` argument to specify top-level metadata:
 
 ```ruby
 JSONAPI::Serializer.serialize(post, meta: {copyright: 'Copyright 2015 Example Corp.'})
+```
+
+### Root links
+
+You can pass a `links` argument to specify top-level links:
+
+```ruby
+JSONAPI::Serializer.serialize(post, links: {self: 'https://example.com/posts'})
 ```
 
 ### Root errors
