@@ -7,7 +7,5 @@ rvm:
   - 2.2.2
   - ruby-head
 before_install:
-  # TODO: remove this when this issue is fixed: https://github.com/travis-ci/travis-ci/issues/5798
-  - gem uninstall bundler -v 1.6.9
   - gem install bundler
 script: bundle exec rspec
