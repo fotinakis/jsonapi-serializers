@@ -216,20 +216,23 @@ module JSONAPI
       protected :evaluate_attr_or_block
     end
 
-    def self.find_serializer_class_name(object)
+    def self.find_serializer_class_name(object, options)
+      if options[:namespace]
+        return "#{options[:namespace]}::#{object.class.name}Serializer"
+      end
       if object.respond_to?(:jsonapi_serializer_class_name)
         return object.jsonapi_serializer_class_name.to_s
       end
       "#{object.class.name}Serializer"
     end
 
-    def self.find_serializer_class(object)
-      class_name = find_serializer_class_name(object)
+    def self.find_serializer_class(object, options)
+      class_name = find_serializer_class_name(object, options)
       class_name.constantize
     end
 
     def self.find_serializer(object, options)
-      find_serializer_class(object).new(object, options)
+      find_serializer_class(object, options).new(object, options)
     end
 
     def self.serialize(objects, options = {})
@@ -237,6 +240,7 @@ module JSONAPI
       options[:is_collection] = options.delete('is_collection') || options[:is_collection] || false
       options[:include] = options.delete('include') || options[:include]
       options[:serializer] = options.delete('serializer') || options[:serializer]
+      options[:namespace] = options.delete('namespace') || options[:namespace]
       options[:context] = options.delete('context') || options[:context] || {}
       options[:skip_collection_check] = options.delete('skip_collection_check') || options[:skip_collection_check] || false
       options[:base_url] = options.delete('base_url') || options[:base_url]
@@ -254,6 +258,7 @@ module JSONAPI
       passthrough_options = {
         context: options[:context],
         serializer: options[:serializer],
+        namespace: options[:namespace],
         include: includes,
         base_url: options[:base_url]
       }
@@ -316,7 +321,8 @@ module JSONAPI
           included_passthrough_options = {}
           included_passthrough_options[:base_url] = passthrough_options[:base_url]
           included_passthrough_options[:context] = passthrough_options[:context]
-          included_passthrough_options[:serializer] = find_serializer_class(data[:object])
+          included_passthrough_options[:serializer] = find_serializer_class(data[:object], options)
+          included_passthrough_options[:namespace] = passthrough_options[:namespace]
           included_passthrough_options[:include_linkages] = data[:include_linkages]
           serialize_primary(data[:object], included_passthrough_options)
         end
@@ -352,7 +358,7 @@ module JSONAPI
     end
 
     def self.serialize_primary(object, options = {})
-      serializer_class = options[:serializer] || find_serializer_class(object)
+      serializer_class = options[:serializer] || find_serializer_class(object, options)
 
       # Spec: Primary data MUST be either:
       # - a single resource object or null, for requests that target single resources.

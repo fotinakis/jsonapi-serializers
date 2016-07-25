@@ -22,6 +22,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Root links](#root-links)
   * [Root errors](#root-errors)
   * [Explicit serializer discovery](#explicit-serializer-discovery)
+  * [Namespace serializers](#namespace-serializers)
 * [Relationships](#relationships)
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
@@ -369,6 +370,36 @@ end
 ```
 
 Now, when a `User` object is serialized, it will use the `SomeOtherNamespace::CustomUserSerializer`.
+
+### Namespace serializers
+
+Assume you have an API with multiple versions:
+
+```ruby
+module Api
+  module V1
+    class PostSerializer
+      include JSONAPI::Serializer
+      attribute :title
+    end
+  end
+  module V2
+    class PostSerializer
+      include JSONAPI::Serializer
+      attribute :name
+    end
+  end
+end
+```
+
+With the namespace option you can choose which serializer is used.
+
+```ruby
+JSONAPI::Serializer.serialize(post, namespace: Api::V1)
+JSONAPI::Serializer.serialize(post, namespace: Api::V2)
+```
+
+This option overrides the `jsonapi_serializer_class_name` method.
 
 ## Relationships
 

@@ -1065,4 +1065,48 @@ describe JSONAPI::Serializer do
       end.not_to raise_error
     end
   end
+
+  describe 'serializer with namespace option' do
+    it 'can serialize a simple object with namespace Api::V1' do
+      user = create(:user)
+      expect(JSONAPI::Serializer.serialize(user, {namespace: Api::V1})).to eq({
+        'data' => serialize_primary(user, {serializer: Api::V1::MyApp::UserSerializer}),
+      })
+    end
+
+    it 'handles recursive loading of relationships with namespaces' do
+      user = create(:user)
+      long_comments = create_list(:long_comment, 2, user: user)
+      post = create(:post, :with_author, long_comments: long_comments)
+      # Make sure each long-comment has a circular reference back to the post.
+      long_comments.each { |c| c.post = post }
+
+      expected_data = {
+        'data' => serialize_primary(post, {serializer: Api::V1::MyApp::PostSerializer}),
+        'included' => [
+          # Intermediates are included: long-comments, long-comments.post, and long-comments.post.author
+          #  http://jsonapi.org/format/#document-structure-compound-documents
+          serialize_primary(post.long_comments.first, {
+            serializer: Api::V1::MyApp::LongCommentSerializer,
+            include_linkages: ['post']
+          }),
+          serialize_primary(post.long_comments.last, {
+            serializer: Api::V1::MyApp::LongCommentSerializer,
+            include_linkages: ['post']
+          }),
+          serialize_primary(post, {
+            serializer: Api::V1::MyApp::PostSerializer,
+            include_linkages: ['author', 'post.long-comments']
+          }),
+          serialize_primary(post.author, {serializer: Api::V1::MyApp::UserSerializer})
+        ],
+      }
+      includes = ['long-comments.post.author']
+      actual_data = JSONAPI::Serializer.serialize(post, include: includes, namespace: Api::V1)
+      # Multiple expectations for better diff output for debugging.
+      expect(actual_data['data']).to eq(expected_data['data'])
+      expect(actual_data['included']).to eq(expected_data['included'])
+      expect(actual_data).to eq(expected_data)
+    end
+  end
 end
