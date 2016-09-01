@@ -219,12 +219,6 @@ def unformat_name(attribute_name)
 end
 ```
 ```ruby
-# Override this to provide a resource-object jsonapi object containing the version in use.
-# http://jsonapi.org/format/#document-jsonapi-object
-def jsonapi
-end
-```
-```ruby
 # Override this to provide resource-object metadata.
 # http://jsonapi.org/format/#document-structure-resource-objects
 def meta
@@ -234,6 +228,12 @@ end
 # Override this to set a base URL (http://example.com) for all links. No trailing slash.
 def base_url
   @base_url
+end
+```
+```ruby
+# Override this to provide a resource-object jsonapi object containing the version in use.
+# http://jsonapi.org/format/#document-jsonapi-object
+def jsonapi
 end
 ```
 ```ruby
@@ -318,9 +318,9 @@ JSONAPI::Serializer.serialize(post, base_url: 'http://example.com')
 
 Note: if you override `self_link` in your serializer and leave out `base_url`, it will not be included.
 
-### Root jsonapi object
+### Root 'jsonapi' object
 
-You can pass a `jsonapi` argument to specify a top-level jsonapi block containing the version of JSON:API in use:
+You can pass a `jsonapi` argument to specify a [top-level "jsonapi" key](http://jsonapi.org/format/#document-jsonapi-object) containing the version of JSON:API in use:
 
 ```ruby
 JSONAPI::Serializer.serialize(post, jsonapi: {version: '1.0'})
