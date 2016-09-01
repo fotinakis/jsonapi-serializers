@@ -62,6 +62,11 @@ module JSONAPI
         attribute_name.to_s.underscore
       end
 
+      # Override this to provide resource-object jsonapi object containing the version in use.
+      # http://jsonapi.org/format/#document-jsonapi-object
+      def jsonapi
+      end
+
       # Override this to provide resource-object metadata.
       # http://jsonapi.org/format/#document-structure-resource-objects
       def meta
@@ -244,6 +249,7 @@ module JSONAPI
       options[:context] = options.delete('context') || options[:context] || {}
       options[:skip_collection_check] = options.delete('skip_collection_check') || options[:skip_collection_check] || false
       options[:base_url] = options.delete('base_url') || options[:base_url]
+      options[:jsonapi] = options.delete('jsonapi') || options[:jsonapi]
       options[:meta] = options.delete('meta') || options[:meta]
       options[:links] = options.delete('links') || options[:links]
 
@@ -299,6 +305,7 @@ module JSONAPI
       result = {
         'data' => primary_data,
       }
+      result['jsonapi'] = options[:jsonapi] if options[:jsonapi]
       result['meta'] = options[:meta] if options[:meta]
       result['links'] = options[:links] if options[:links]
       result['errors'] = options[:errors] if options[:errors]
@@ -382,10 +389,12 @@ module JSONAPI
       attributes = serializer.attributes
       links = serializer.links
       relationships = serializer.relationships
+      jsonapi = serializer.jsonapi
       meta = serializer.meta
       data['attributes'] = attributes if !attributes.empty?
       data['links'] = links if !links.empty?
       data['relationships'] = relationships if !relationships.empty?
+      data['jsonapi'] = jsonapi if !jsonapi.nil?
       data['meta'] = meta if !meta.nil?
       data
     end

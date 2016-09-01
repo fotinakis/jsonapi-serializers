@@ -518,6 +518,14 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+    it 'can include a top level jsonapi node' do
+      post = create(:post)
+      jsonapi_version = {'version' => '1.0'}
+      expect(JSONAPI::Serializer.serialize(post, jsonapi: jsonapi_version)).to eq({
+        'jsonapi' => {'version' => '1.0'},
+        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
+      })
+    end
     it 'can include a top level meta node' do
       post = create(:post)
       meta = {authors: ['Yehuda Katz', 'Steve Klabnik'], copyright: 'Copyright 2015 Example Corp.'}

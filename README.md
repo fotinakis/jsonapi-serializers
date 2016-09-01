@@ -18,6 +18,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Custom attributes](#custom-attributes)
   * [More customizations](#more-customizations)
   * [Base URL](#base-url)
+  * [Root jsonapi object](#root-jsonapi-object)
   * [Root metadata](#root-metadata)
   * [Root links](#root-links)
   * [Root errors](#root-errors)
@@ -218,6 +219,12 @@ def unformat_name(attribute_name)
 end
 ```
 ```ruby
+# Override this to provide a resource-object jsonapi object containing the version in use.
+# http://jsonapi.org/format/#document-jsonapi-object
+def jsonapi
+end
+```
+```ruby
 # Override this to provide resource-object metadata.
 # http://jsonapi.org/format/#document-structure-resource-objects
 def meta
@@ -310,6 +317,14 @@ JSONAPI::Serializer.serialize(post, base_url: 'http://example.com')
 ```
 
 Note: if you override `self_link` in your serializer and leave out `base_url`, it will not be included.
+
+### Root jsonapi object
+
+You can pass a `jsonapi` argument to specify a top-level jsonapi block containing the version of JSON:API in use:
+
+```ruby
+JSONAPI::Serializer.serialize(post, jsonapi: {version: '1.0'})
+```
 
 ### Root metadata
 
