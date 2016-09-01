@@ -18,10 +18,10 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Custom attributes](#custom-attributes)
   * [More customizations](#more-customizations)
   * [Base URL](#base-url)
-  * [Root jsonapi object](#root-jsonapi-object)
   * [Root metadata](#root-metadata)
   * [Root links](#root-links)
   * [Root errors](#root-errors)
+  * [Root jsonapi object](#root-jsonapi-object)
   * [Explicit serializer discovery](#explicit-serializer-discovery)
   * [Namespace serializers](#namespace-serializers)
 * [Relationships](#relationships)
@@ -318,14 +318,6 @@ JSONAPI::Serializer.serialize(post, base_url: 'http://example.com')
 
 Note: if you override `self_link` in your serializer and leave out `base_url`, it will not be included.
 
-### Root 'jsonapi' object
-
-You can pass a `jsonapi` argument to specify a [top-level "jsonapi" key](http://jsonapi.org/format/#document-jsonapi-object) containing the version of JSON:API in use:
-
-```ruby
-JSONAPI::Serializer.serialize(post, jsonapi: {version: '1.0'})
-```
-
 ### Root metadata
 
 You can pass a `meta` argument to specify top-level metadata:
@@ -370,6 +362,14 @@ class Api::V1::ReposController < Api::V1::BaseController
     end
   end
 end
+```
+
+### Root 'jsonapi' object
+
+You can pass a `jsonapi` argument to specify a [top-level "jsonapi" key](http://jsonapi.org/format/#document-jsonapi-object) containing the version of JSON:API in use:
+
+```ruby
+JSONAPI::Serializer.serialize(post, jsonapi: {version: '1.0'})
 ```
 
 ### Explicit serializer discovery
