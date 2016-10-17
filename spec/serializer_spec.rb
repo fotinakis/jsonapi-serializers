@@ -441,12 +441,12 @@ describe JSONAPI::Serializer do
     it 'can include a top level errors node' do
       errors = [
         {
-          'source' => { 'pointer' => '/data/attributes/first-name' },
+          'source' => {'pointer' => '/data/attributes/first-name'},
           'title' => 'Invalid Attribute',
           'detail' => 'First name must contain at least three characters.'
         },
         {
-          'source' => { 'pointer' => '/data/attributes/first-name' },
+          'source' => {'pointer' => '/data/attributes/first-name'},
           'title' => 'Invalid Attribute',
           'detail' => 'First name must contain an emoji.'
         }
@@ -477,15 +477,15 @@ describe JSONAPI::Serializer do
       user = DummyUser.new
       jsonapi_errors = [
         {
-          'source' => { 'pointer' => '/data/attributes/email' },
+          'source' => {'pointer' => '/data/attributes/email'},
           'detail' => 'Email is invalid'
         },
         {
-          'source' => { 'pointer' => '/data/attributes/email' },
+          'source' => {'pointer' => '/data/attributes/email'},
           'detail' => "Email can't be blank"
         },
         {
-          'source' => { 'pointer' => '/data/attributes/first-name' },
+          'source' => {'pointer' => '/data/attributes/first-name'},
           'detail' => "First name can't be blank"
         }
       ]
@@ -864,7 +864,7 @@ describe JSONAPI::Serializer do
         long_comments = [first_comment, second_comment]
         post = create(:post, :with_author, long_comments: long_comments)
 
-        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title'})
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: :title})
         expect(serialized_data).to eq ({
           'data' => {
             'type' => 'posts',
@@ -878,7 +878,6 @@ describe JSONAPI::Serializer do
           }
         })
       end
-
       it 'allows to limit fields(relationships) for serialized resource' do
         first_user = create(:user)
         second_user = create(:user)
@@ -887,7 +886,8 @@ describe JSONAPI::Serializer do
         long_comments = [first_comment, second_comment]
         post = create(:post, :with_author, long_comments: long_comments)
 
-        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author,long_comments'})
+        fields = {posts: 'title,author,long_comments'}
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: fields)
         expect(serialized_data['data']['relationships']).to eq ({
           'author' => {
             'links' => {
@@ -903,7 +903,6 @@ describe JSONAPI::Serializer do
           }
         })
       end
-
       it "allows also to pass specific fields as array instead of comma-separates values" do
         first_user = create(:user)
         second_user = create(:user)
@@ -925,7 +924,6 @@ describe JSONAPI::Serializer do
           }
         })
       end
-
       it 'allows to limit fields(attributes and relationships) for included resources' do
         first_user = create(:user)
         second_user = create(:user)
@@ -937,38 +935,28 @@ describe JSONAPI::Serializer do
         expected_primary_data = serialize_primary(post, {
           serializer: MyApp::PostSerializer,
           include_linkages: ['author'],
-          fields: { 'posts' => [:title, :author] }
+          fields: {'posts' => [:title, :author] }
         })
 
-        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author', users: ''}, include: 'author')
+        fields = {posts: 'title,author', users: ''}
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: fields, include: 'author')
         expect(serialized_data).to eq ({
           'data' => expected_primary_data,
           'included' => [
-            serialize_primary(post.author, serializer: MyAppOtherNamespace::UserSerializer, fields: { 'users' => [] })
+            serialize_primary(
+              post.author,
+              serializer: MyAppOtherNamespace::UserSerializer,
+              fields: {'users' => []},
+            )
           ]
         })
 
-        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author'}, include: 'author')
+        fields = {posts: 'title,author'}
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: fields, include: 'author')
         expect(serialized_data).to eq ({
           'data' => expected_primary_data,
           'included' => [
             serialize_primary(post.author, serializer: MyAppOtherNamespace::UserSerializer)
-          ]
-        })
-
-        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author', users: 'nonexistent'}, include: 'author')
-        expect(serialized_data).to eq ({
-          'data' => expected_primary_data,
-          'included' => [
-            serialize_primary(post.author, serializer: MyAppOtherNamespace::UserSerializer, fields: { 'users' => [:nonexistent] })
-          ]
-        })
-
-        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author', users: 'name'}, include: 'author')
-        expect(serialized_data).to eq ({
-          'data' => expected_primary_data,
-          'included' => [
-            serialize_primary(post.author, serializer: MyAppOtherNamespace::UserSerializer, fields: { 'users' => [:name] })
           ]
         })
       end

@@ -419,59 +419,32 @@ This option overrides the `jsonapi_serializer_class_name` method.
 
 ### Sparse fieldsets
 
-The JSON:API spec allows to return only [specific fields](http://jsonapi.org/format/#fetching-sparse-fieldsets).
+The JSON:API spec allows to return only [specific fields](http://jsonapi.org/format/#fetching-sparse-fieldsets) from attributes and relationships.
 
-For example, if you wanted to return only `title` and `author` fields for `posts` type and `name` field for `users` type, you could write the following code:
+For example, if you wanted to return only the `title` field and `author` relationship link for `posts`:
 
 ```ruby
-fields = {posts: 'title,author', users: 'name'}
-JSONAPI::Serializer.serialize(post, fields: fields, include: 'author')
+fields =
+JSONAPI::Serializer.serialize(post, fields: {posts: [:title]})
 ```
 
-Returns:
-
-```json
-{
-  "data": {
-    "type": "posts",
-    "id": "1",
-    "attributes": {
-      "title": "Title for Post 1"
-    },
-   "links": {
-      "self": "/posts/1"
-    },
-    "relationships": {
-      "author": {
-        "links": {
-          "self": "/posts/1/relationships/author",
-          "related": "/posts/1/author"
-        },
-        "data": { "type": "users", "id": "3" }
-      }
-    }
-  },
- "included": [
-    {
-      "type": "users",
-      "id": "3",
-      "attributes": {
-        "name": "User #3"
-      },
-      "links": {
-        "self": "/users/3"
-      }
-    }
-  ]
-}
-```
-
-You could also pass an array of specific fields for given type instead of comma-separated values:
+Sparse fieldsets also affect relationship links. In this case, only the `author` relationship link would be included:
 
 ``` ruby
-fields = {posts: ['title', 'author'], users: ['name']}
-JSONAPI::Serializer.serialize(post, fields: fields, include: 'author')
+JSONAPI::Serializer.serialize(post, fields: {posts: [:title, :author]})
 ```
+
+Sparse fieldsets operate on a per-type basis, so they affect all resources in the response including in compound documents. For example, this will affect both the `posts` type in the primary data and the `users` type in the compound data:
+
+``` ruby
+JSONAPI::Serializer.serialize(
+  post,
+  fields: {posts: ['title', 'author'], users: ['name']},
+  include: 'author',
+)
+```
+
+Sparse fieldsets support comma-separated strings (`fields: {posts: 'title,author'}`, arrays of strings (`fields: {posts: ['title', 'author']}`), single symbols (`fields: {posts: :title}`), and arrays of symbols (`fields: {posts: [:title, :author]}`).
 
 ## Relationships
 
