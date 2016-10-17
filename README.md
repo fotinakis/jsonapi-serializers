@@ -244,7 +244,7 @@ end
 ```
 ```ruby
 def relationship_self_link(attribute_name)
-  "#{self_link}/links/#{format_name(attribute_name)}"
+  "#{self_link}/relationships/#{format_name(attribute_name)}"
 end
 ```
 ```ruby
