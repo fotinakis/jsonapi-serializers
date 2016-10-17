@@ -24,6 +24,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Root jsonapi object](#root-jsonapi-object)
   * [Explicit serializer discovery](#explicit-serializer-discovery)
   * [Namespace serializers](#namespace-serializers)
+  * [Sparse fieldsets](#sparse-fieldsets)
 * [Relationships](#relationships)
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
@@ -416,6 +417,62 @@ JSONAPI::Serializer.serialize(post, namespace: Api::V2)
 
 This option overrides the `jsonapi_serializer_class_name` method.
 
+### Sparse fieldsets
+
+The JSON:API spec allows to return only [specific fields](http://jsonapi.org/format/#fetching-sparse-fieldsets).
+
+For example, if you wanted to return only `title` and `author` fields for `posts` type and `name` field for `users` type, you could write the following code:
+
+```ruby
+fields = {posts: 'title,author', users: 'name'}
+JSONAPI::Serializer.serialize(post, fields: fields, include: 'author')
+```
+
+Returns:
+
+```json
+{
+  "data": {
+    "type": "posts",
+    "id": "1",
+    "attributes": {
+      "title": "Title for Post 1"
+    },
+   "links": {
+      "self": "/posts/1"
+    },
+    "relationships": {
+      "author": {
+        "links": {
+          "self": "/posts/1/relationships/author",
+          "related": "/posts/1/author"
+        },
+        "data": { "type": "users", "id": "3" }
+      }
+    }
+  },
+ "included": [
+    {
+      "type": "users",
+      "id": "3",
+      "attributes": {
+        "name": "User #3"
+      },
+      "links": {
+        "self": "/users/3"
+      }
+    }
+  ]
+}
+```
+
+You could also pass an array of specific fields for given type instead of comma-separated values:
+
+``` ruby
+fields = {posts: ['title', 'author'], users: ['name']}
+JSONAPI::Serializer.serialize(post, fields: fields, include: 'author')
+```
+
 ## Relationships
 
 You can easily specify relationships with the `has_one` and `has_many` directives.
@@ -783,7 +840,6 @@ See [Releases](https://github.com/fotinakis/jsonapi-serializers/releases).
 
 ## Unfinished business
 
-* Support for the `fields` spec is planned, would love a PR contribution for this.
 * Support for pagination/sorting is unlikely to be supported because it would likely involve coupling to ActiveRecord, but please open an issue if you have ideas of how to support this generically.
 
 ## Contributing

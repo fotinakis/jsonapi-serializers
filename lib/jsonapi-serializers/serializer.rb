@@ -25,12 +25,14 @@ module JSONAPI
       attr_accessor :object
       attr_accessor :context
       attr_accessor :base_url
+      attr_accessor :fields
 
       def initialize(object, options = {})
         @object = object
         @options = options
         @context = options[:context] || {}
         @base_url = options[:base_url]
+        @fields = options[:fields] || {}
 
         # Internal serializer options, not exposed through attr_accessor. No touchie.
         @_include_linkages = options[:include_linkages] || []
@@ -164,8 +166,7 @@ module JSONAPI
       def attributes
         return {} if self.class.attributes_map.nil?
         attributes = {}
-        self.class.attributes_map.each do |attribute_name, attr_data|
-          next if !should_include_attr?(attr_data[:options][:if], attr_data[:options][:unless])
+        self.class.attributes_map.select(&should_include_attr_proc).each do |attribute_name, attr_data|
           value = evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
           attributes[format_name(attribute_name)] = value
         end
@@ -175,8 +176,7 @@ module JSONAPI
       def has_one_relationships
         return {} if self.class.to_one_associations.nil?
         data = {}
-        self.class.to_one_associations.each do |attribute_name, attr_data|
-          next if !should_include_attr?(attr_data[:options][:if], attr_data[:options][:unless])
+        self.class.to_one_associations.select(&should_include_attr_proc).each do |attribute_name, attr_data|
           data[attribute_name] = attr_data
         end
         data
@@ -189,8 +189,7 @@ module JSONAPI
       def has_many_relationships
         return {} if self.class.to_many_associations.nil?
         data = {}
-        self.class.to_many_associations.each do |attribute_name, attr_data|
-          next if !should_include_attr?(attr_data[:options][:if], attr_data[:options][:unless])
+        self.class.to_many_associations.select(&should_include_attr_proc).each do |attribute_name, attr_data|
           data[attribute_name] = attr_data
         end
         data
@@ -200,14 +199,22 @@ module JSONAPI
         evaluate_attr_or_block(attribute_name, attr_data[:attr_or_block])
       end
 
-      def should_include_attr?(if_method_name, unless_method_name)
+      def should_include_attr?(attribute_name, if_method_name, unless_method_name)
         # Allow "if: :show_title?" and "unless: :hide_title?" attribute options.
         show_attr = true
         show_attr &&= send(if_method_name) if if_method_name
         show_attr &&= !send(unless_method_name) if unless_method_name
+        show_attr &&= @fields[type].include?(attribute_name) if @fields[type]
         show_attr
       end
       protected :should_include_attr?
+
+      def should_include_attr_proc
+        lambda do |attribute_name, attr_data|
+          should_include_attr?(attribute_name, attr_data[:options][:if], attr_data[:options][:unless])
+        end
+      end
+      private :should_include_attr_proc
 
       def evaluate_attr_or_block(attribute_name, attr_or_block)
         if attr_or_block.is_a?(Proc)
@@ -252,6 +259,7 @@ module JSONAPI
       options[:jsonapi] = options.delete('jsonapi') || options[:jsonapi]
       options[:meta] = options.delete('meta') || options[:meta]
       options[:links] = options.delete('links') || options[:links]
+      options[:fields] = options.delete('fields') || options[:fields]
 
       # Deprecated: use serialize_errors method instead
       options[:errors] = options.delete('errors') || options[:errors]
@@ -260,12 +268,28 @@ module JSONAPI
       includes = options[:include]
       includes = (includes.is_a?(String) ? includes.split(',') : includes).uniq if includes
 
+      fields = options[:fields] || {}
+      # Transforms input so that the comma-separated fields are separate symbols in array
+      # and keys are stringified
+      # Example:
+      # {posts: 'title,author,long_comments'} => {'posts' => [:title, :author, :long_comments]}
+      # {posts: ['title', 'author', 'long_comments'} => {'posts' => [:title, :author, :long_comments]}
+      #
+      fields = Hash[fields.map do |type, whitelisted_fields|
+        if whitelisted_fields.respond_to?(:to_ary)
+          [type.to_s, whitelisted_fields.map(&:to_sym)]
+        else
+          [type.to_s, whitelisted_fields.split(",").map(&:to_sym)]
+        end
+      end]
+
       # An internal-only structure that is passed through serializers as they are created.
       passthrough_options = {
         context: options[:context],
         serializer: options[:serializer],
         namespace: options[:namespace],
         include: includes,
+        fields: fields,
         base_url: options[:base_url]
       }
 
@@ -328,6 +352,7 @@ module JSONAPI
           included_passthrough_options = {}
           included_passthrough_options[:base_url] = passthrough_options[:base_url]
           included_passthrough_options[:context] = passthrough_options[:context]
+          included_passthrough_options[:fields] = passthrough_options[:fields]
           included_passthrough_options[:serializer] = find_serializer_class(data[:object], options)
           included_passthrough_options[:namespace] = passthrough_options[:namespace]
           included_passthrough_options[:include_linkages] = data[:include_linkages]

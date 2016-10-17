@@ -854,6 +854,125 @@ describe JSONAPI::Serializer do
         })
       end
     end
+
+    context 'sparse fieldsets' do
+      it 'allows to limit fields(attributes) for serialized resource' do
+        first_user = create(:user)
+        second_user = create(:user)
+        first_comment = create(:long_comment, user: first_user)
+        second_comment = create(:long_comment, user: second_user)
+        long_comments = [first_comment, second_comment]
+        post = create(:post, :with_author, long_comments: long_comments)
+
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title'})
+        expect(serialized_data).to eq ({
+          'data' => {
+            'type' => 'posts',
+            'id' => post.id.to_s,
+            'attributes' => {
+              'title' => post.title,
+            },
+            'links' => {
+              'self' => '/posts/1'
+            }
+          }
+        })
+      end
+
+      it 'allows to limit fields(relationships) for serialized resource' do
+        first_user = create(:user)
+        second_user = create(:user)
+        first_comment = create(:long_comment, user: first_user)
+        second_comment = create(:long_comment, user: second_user)
+        long_comments = [first_comment, second_comment]
+        post = create(:post, :with_author, long_comments: long_comments)
+
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author,long_comments'})
+        expect(serialized_data['data']['relationships']).to eq ({
+          'author' => {
+            'links' => {
+              'self' => '/posts/1/relationships/author',
+              'related' => '/posts/1/author'
+            }
+          },
+          'long-comments' => {
+            'links' => {
+              'self' => '/posts/1/relationships/long-comments',
+              'related' => '/posts/1/long-comments'
+            }
+          }
+        })
+      end
+
+      it "allows also to pass specific fields as array instead of comma-separates values" do
+        first_user = create(:user)
+        second_user = create(:user)
+        first_comment = create(:long_comment, user: first_user)
+        second_comment = create(:long_comment, user: second_user)
+        long_comments = [first_comment, second_comment]
+        post = create(:post, :with_author, long_comments: long_comments)
+
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: ['title', 'author']})
+        expect(serialized_data['data']['attributes']).to eq ({
+          'title' => post.title
+        })
+        expect(serialized_data['data']['relationships']).to eq ({
+          'author' => {
+            'links' => {
+              'self' => '/posts/1/relationships/author',
+              'related' => '/posts/1/author'
+            }
+          }
+        })
+      end
+
+      it 'allows to limit fields(attributes and relationships) for included resources' do
+        first_user = create(:user)
+        second_user = create(:user)
+        first_comment = create(:long_comment, user: first_user)
+        second_comment = create(:long_comment, user: second_user)
+        long_comments = [first_comment, second_comment]
+        post = create(:post, :with_author, long_comments: long_comments)
+
+        expected_primary_data = serialize_primary(post, {
+          serializer: MyApp::PostSerializer,
+          include_linkages: ['author'],
+          fields: { 'posts' => [:title, :author] }
+        })
+
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author', users: ''}, include: 'author')
+        expect(serialized_data).to eq ({
+          'data' => expected_primary_data,
+          'included' => [
+            serialize_primary(post.author, serializer: MyAppOtherNamespace::UserSerializer, fields: { 'users' => [] })
+          ]
+        })
+
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author'}, include: 'author')
+        expect(serialized_data).to eq ({
+          'data' => expected_primary_data,
+          'included' => [
+            serialize_primary(post.author, serializer: MyAppOtherNamespace::UserSerializer)
+          ]
+        })
+
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author', users: 'nonexistent'}, include: 'author')
+        expect(serialized_data).to eq ({
+          'data' => expected_primary_data,
+          'included' => [
+            serialize_primary(post.author, serializer: MyAppOtherNamespace::UserSerializer, fields: { 'users' => [:nonexistent] })
+          ]
+        })
+
+        serialized_data = JSONAPI::Serializer.serialize(post, fields: {posts: 'title,author', users: 'name'}, include: 'author')
+        expect(serialized_data).to eq ({
+          'data' => expected_primary_data,
+          'included' => [
+            serialize_primary(post.author, serializer: MyAppOtherNamespace::UserSerializer, fields: { 'users' => [:name] })
+          ]
+        })
+      end
+    end
   end
 
   describe 'serialize (class method)' do
