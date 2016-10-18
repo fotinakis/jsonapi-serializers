@@ -205,10 +205,11 @@ module JSONAPI
         # Allow "if: :show_title?" and "unless: :hide_title?" attribute options.
         if_method_name = attr_data[:options][:if]
         unless_method_name = attr_data[:options][:unless]
+        formatted_attribute_name = format_name(attribute_name).to_sym
         show_attr = true
         show_attr &&= send(if_method_name) if if_method_name
         show_attr &&= !send(unless_method_name) if unless_method_name
-        show_attr &&= @_fields[type.to_s].include?(attribute_name) if @_fields[type.to_s]
+        show_attr &&= @_fields[type.to_s].include?(formatted_attribute_name) if @_fields[type.to_s]
         show_attr
       end
       protected :should_include_attr?

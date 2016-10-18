@@ -886,7 +886,7 @@ describe JSONAPI::Serializer do
         long_comments = [first_comment, second_comment]
         post = create(:post, :with_author, long_comments: long_comments)
 
-        fields = {posts: 'title,author,long_comments'}
+        fields = {posts: 'title,author,long-comments'}
         serialized_data = JSONAPI::Serializer.serialize(post, fields: fields)
         expect(serialized_data['data']['relationships']).to eq ({
           'author' => {
