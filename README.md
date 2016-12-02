@@ -723,7 +723,7 @@ The important takeaways here are that:
 ```ruby
 require 'sequel'
 require 'sinatra/base'
-require 'json/ext'
+require 'json'
 require 'jsonapi-serializers'
 
 class Post < Sequel::Model
@@ -759,20 +759,21 @@ end
 module Api
   class V1 < Sinatra::Base
     configure do
-      mime_type :jsonapi, 'application/vnd.api+json'
+      mime_type :api_json, 'application/vnd.api+json'
 
       set :database, Sequel.connect
     end
 
     helpers do
-      # Parse the body of the request depending on its content-type:
       def parse_request_body
-        request.body.rewind
+        return unless request.body.respond_to?(:size) &&
+          request.body.size > 0
 
-        case request.content_type && request.content_type[/^([^;]+)/]
-        when /json$/, /javascript$/
-          JSON.parse(request.body.read, symbolize_names: true)
-        end
+        halt 415 unless request.content_type &&
+          request.content_type[/^[^;]+/] == mime_type(:api_json)
+
+        request.body.rewind
+        JSON.parse(request.body.read, symbolize_names: true)
       end
 
       # Convenience methods for serializing models:
@@ -789,16 +790,17 @@ module Api
     end
 
     before do
-      @data = parse_request_body if request.body.size > 0
+      halt 406 unless request.preferred_type.entry == mime_type(:api_json)
+      @data = parse_request_body
+      content_type :api_json
     end
 
-    get '/posts', provides: :jsonapi do
+    get '/posts' do
       posts = Post.all
-      not_found if posts.empty?
       serialize_models(posts).to_json
     end
 
-    get '/posts/:id', provides: :jsonapi do
+    get '/posts/:id' do
       post = Post[params[:id].to_i]
       not_found if post.nil?
       serialize_model(post, include: 'comments').to_json
@@ -806,6 +808,9 @@ module Api
   end
 end
 ```
+
+See also: [Sinja](https://github.com/mwpastore/sinja), which extends Sinatra
+and leverages jsonapi-serializers to provide a JSON:API framework.
 
 ## Changelog
 
