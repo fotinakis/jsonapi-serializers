@@ -699,9 +699,11 @@ ActionDispatch::ParamsParser::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MIMETYP
 end
 
 # Rails 5 moved DEFAULT_PARSERS
-ActionDispatch::Http::Parameters::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MIMETYPE)] = lambda do |body|
+ActionDispatch::Http::Parameters::DEFAULT_PARSERS[:api_json] = lambda do |body|
   JSON.parse(body)
 end
+ActionDispatch::Request.parameter_parsers = ActionDispatch::Request::DEFAULT_PARSERS
+
 ```
 
 ## Sinatra example
