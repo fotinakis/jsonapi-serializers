@@ -22,6 +22,10 @@ module JSONAPI
     end
 
     module InstanceMethods
+      @@class_names = {}
+      @@formatted_attribute_names = {}
+      @@unformatted_attribute_names = {}
+
       attr_accessor :object
       attr_accessor :context
       attr_accessor :base_url
@@ -48,19 +52,22 @@ module JSONAPI
       # per the spec naming recommendations: http://jsonapi.org/recommendations/#naming
       # For example, 'MyApp::LongCommment' will become the 'long-comments' type.
       def type
-        object.class.name.demodulize.tableize.dasherize
+        class_name = object.class.name
+        @@class_names[class_name] ||= class_name.demodulize.tableize.dasherize.freeze
       end
 
       # Override this to customize how attribute names are formatted.
       # By default, attribute names are dasherized per the spec naming recommendations:
       # http://jsonapi.org/recommendations/#naming
       def format_name(attribute_name)
-        attribute_name.to_s.dasherize
+        attr_name = attribute_name.to_s
+        @@formatted_attribute_names[attr_name] ||= attr_name.dasherize.freeze
       end
 
       # The opposite of format_name. Override this if you override format_name.
       def unformat_name(attribute_name)
-        attribute_name.to_s.underscore
+        attr_name = attribute_name.to_s
+        @@unformatted_attribute_names[attr_name] ||= attr_name.underscore.freeze
       end
 
       # Override this to provide resource-object jsonapi object containing the version in use.
