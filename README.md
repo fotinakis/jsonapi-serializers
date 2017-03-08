@@ -193,7 +193,7 @@ Many other formatting and customizations are possible by overriding any of the f
 # Override this to customize the JSON:API "id" for this object.
 # Always return a string from this method to conform with the JSON:API spec.
 def id
-  object.id.to_s
+  object.slug.to_s
 end
 ```
 ```ruby
@@ -202,7 +202,7 @@ end
 # per the spec naming recommendations: http://jsonapi.org/recommendations/#naming
 # For example, 'MyApp::LongCommment' will become the 'long-comments' type.
 def type
-  object.class.name.demodulize.tableize.dasherize
+  'long-comments'
 end
 ```
 ```ruby
