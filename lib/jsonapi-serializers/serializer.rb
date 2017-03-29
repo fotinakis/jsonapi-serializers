@@ -235,17 +235,25 @@ module JSONAPI
 
     def self.find_serializer_class_name(object, options)
       if options[:namespace]
-        return "#{options[:namespace]}::#{object.class.name}Serializer"
+        "#{options[:namespace]}::#{object.class.name}Serializer"
+      else
+        "#{object.class.name}Serializer"
       end
-      if object.respond_to?(:jsonapi_serializer_class_name)
-        return object.jsonapi_serializer_class_name.to_s
-      end
-      "#{object.class.name}Serializer"
     end
 
     def self.find_serializer_class(object, options)
-      class_name = find_serializer_class_name(object, options)
-      class_name.constantize
+      if object.respond_to?(:jsonapi_serializer_class_name)
+        object.jsonapi_serializer_class_name.to_s.constantize
+      else
+        memoized_serializer_classes[object.class][options[:namespace]] ||=
+          find_serializer_class_name(object, options).constantize
+      end
+    end
+
+    def self.memoized_serializer_classes
+      @memoized_serializer_classes ||= {}.tap do |hash|
+        hash.default_proc = ->(hash, key) { hash[key] = {} }
+      end
     end
 
     def self.find_serializer(object, options)
