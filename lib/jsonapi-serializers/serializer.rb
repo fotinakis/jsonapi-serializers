@@ -304,8 +304,8 @@ module JSONAPI
 
       # Automatically include linkage data for any relation that is also included.
       if includes
-        direct_children_includes = includes.reject { |key| key.include?('.') }
-        passthrough_options[:include_linkages] = direct_children_includes
+        include_linkages = includes.map { |key| key.to_s.split('.').first }
+        passthrough_options[:include_linkages] = include_linkages
       end
 
       # Spec: Primary data MUST be either:

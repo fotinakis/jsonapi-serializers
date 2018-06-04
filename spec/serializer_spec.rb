@@ -708,7 +708,10 @@ describe JSONAPI::Serializer do
       long_comments.each { |c| c.post = post }
 
       expected_data = {
-        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
+        'data' => serialize_primary(post, {
+          serializer: MyApp::PostSerializer,
+          include_linkages: ['long-comments']
+        }),
         'included' => [
           # Intermediates are included: long-comments, long-comments.post, and long-comments.post.author
           #  http://jsonapi.org/format/#document-structure-compound-documents
@@ -745,7 +748,10 @@ describe JSONAPI::Serializer do
       long_comments.each { |c| c.post = post }
 
       expected_data = {
-        'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
+        'data' => serialize_primary(post, {
+          serializer: MyApp::PostSerializer,
+          include_linkages: ['long-comments']
+        }),
         'included' => [
           serialize_primary(first_comment, {
             serializer: MyApp::LongCommentSerializer,
@@ -788,7 +794,7 @@ describe JSONAPI::Serializer do
           serialize_primary(comment_user, {serializer: MyAppOtherNamespace::UserSerializer}),
         ],
       }
-      includes = ['long-comments', 'long-comments.user']
+      includes = ['long-comments.user']
       actual_data = JSONAPI::Serializer.serialize(post, include: includes)
 
       # Multiple expectations for better diff output for debugging.
@@ -826,7 +832,7 @@ describe JSONAPI::Serializer do
         ],
       }
       # Also test that it handles string include arguments.
-      includes = 'long-comments, long-comments.post.author'
+      includes = 'long-comments,long-comments.post.author'
       actual_data = JSONAPI::Serializer.serialize(post, include: includes)
 
       # Multiple expectations for better diff output for debugging.
@@ -1197,7 +1203,10 @@ describe JSONAPI::Serializer do
       long_comments.each { |c| c.post = post }
 
       expected_data = {
-        'data' => serialize_primary(post, {serializer: Api::V1::MyApp::PostSerializer}),
+        'data' => serialize_primary(post, {
+          serializer: Api::V1::MyApp::PostSerializer,
+          include_linkages: ['long-comments']
+        }),
         'included' => [
           # Intermediates are included: long-comments, long-comments.post, and long-comments.post.author
           #  http://jsonapi.org/format/#document-structure-compound-documents
