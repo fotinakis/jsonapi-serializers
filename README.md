@@ -29,6 +29,7 @@ This library is up-to-date with the finalized v1 JSON API spec.
   * [Compound documents and includes](#compound-documents-and-includes)
   * [Relationship path handling](#relationship-path-handling)
   * [Control links and data in relationships](#control-links-and-data-in-relationships)
+* [Instrumentation](#instrumentation)
 * [Rails example](#rails-example)
 * [Sinatra example](#sinatra-example)
 * [Unfinished business](#unfinished-business)
@@ -639,6 +640,30 @@ Notice that linkage data is now included for the `author` relationship:
          "id": "1"
        }
      }
+```
+
+## Instrumentation
+
+Using [ActiveSupport::Notifications](https://api.rubyonrails.org/classes/ActiveSupport/Notifications.html) you can subscribe to key notifications to better understand the performance of your serialization.
+
+The following notifications can be subscribed to:
+
+* `render.jsonapi_serializers.serialize_primary` - time spent serializing a single object
+* `render.jsonapi_serializers.find_recursive_relationships` - time spent finding objects to serialize through relationships
+
+This is an example of how you might subscribe to all events that come from `jsonapi-serializers`.
+
+```ruby
+require 'active_support/notifications'
+
+ActiveSupport::Notifications.subscribe(/^render\.jsonapi_serializers\..*/) do |*args|
+  event = ActiveSupport::Notifications::Event.new(*args)
+
+  puts event.name
+  puts event.time
+  puts event.end
+  puts event.payload
+end
 ```
 
 ## Rails example

@@ -1,5 +1,6 @@
 require 'set'
 require 'active_support/inflector'
+require 'active_support/notifications'
 
 module JSONAPI
   module Serializer
@@ -394,38 +395,43 @@ module JSONAPI
     end
 
     def self.serialize_primary(object, options = {})
-      serializer_class = options[:serializer] || find_serializer_class(object, options)
+      ActiveSupport::Notifications.instrument(
+        'render.jsonapi_serializers.serialize_primary',
+        {class_name: object&.class&.name}
+      ) do
+        serializer_class = options[:serializer] || find_serializer_class(object, options)
 
-      # Spec: Primary data MUST be either:
-      # - a single resource object or null, for requests that target single resources.
-      # http://jsonapi.org/format/#document-structure-top-level
-      return if object.nil?
+        # Spec: Primary data MUST be either:
+        # - a single resource object or null, for requests that target single resources.
+        # http://jsonapi.org/format/#document-structure-top-level
+        return if object.nil?
 
-      serializer = serializer_class.new(object, options)
-      data = {
-        'type' => serializer.type.to_s,
-      }
+        serializer = serializer_class.new(object, options)
+        data = {
+          'type' => serializer.type.to_s,
+        }
 
-      # "The id member is not required when the resource object originates at the client
-      #  and represents a new resource to be created on the server."
-      # http://jsonapi.org/format/#document-resource-objects
-      # We'll assume that if the id is blank, it means the resource is to be created.
-      data['id'] = serializer.id.to_s if serializer.id && !serializer.id.empty?
+        # "The id member is not required when the resource object originates at the client
+        #  and represents a new resource to be created on the server."
+        # http://jsonapi.org/format/#document-resource-objects
+        # We'll assume that if the id is blank, it means the resource is to be created.
+        data['id'] = serializer.id.to_s if serializer.id && !serializer.id.empty?
 
-      # Merge in optional top-level members if they are non-nil.
-      # http://jsonapi.org/format/#document-structure-resource-objects
-      # Call the methods once now to avoid calling them twice when evaluating the if's below.
-      attributes = serializer.attributes
-      links = serializer.links
-      relationships = serializer.relationships
-      jsonapi = serializer.jsonapi
-      meta = serializer.meta
-      data['attributes'] = attributes if !attributes.empty?
-      data['links'] = links if !links.empty?
-      data['relationships'] = relationships if !relationships.empty?
-      data['jsonapi'] = jsonapi if !jsonapi.nil?
-      data['meta'] = meta if !meta.nil?
-      data
+        # Merge in optional top-level members if they are non-nil.
+        # http://jsonapi.org/format/#document-structure-resource-objects
+        # Call the methods once now to avoid calling them twice when evaluating the if's below.
+        attributes = serializer.attributes
+        links = serializer.links
+        relationships = serializer.relationships
+        jsonapi = serializer.jsonapi
+        meta = serializer.meta
+        data['attributes'] = attributes if !attributes.empty?
+        data['links'] = links if !links.empty?
+        data['relationships'] = relationships if !relationships.empty?
+        data['jsonapi'] = jsonapi if !jsonapi.nil?
+        data['meta'] = meta if !meta.nil?
+        data
+      end
     end
     class << self; protected :serialize_primary; end
 
@@ -447,88 +453,93 @@ module JSONAPI
     #   ['users', '2'] => {object: <User>, include_linkages: []},
     # }
     def self.find_recursive_relationships(root_object, root_inclusion_tree, results, options)
-      root_inclusion_tree.each do |attribute_name, child_inclusion_tree|
-        # Skip the sentinal value, but we need to preserve it for siblings.
-        next if attribute_name == :_include
+      ActiveSupport::Notifications.instrument(
+        'render.jsonapi_serializers.find_recursive_relationships',
+        {class_name: root_object.class.name},
+      ) do
+        root_inclusion_tree.each do |attribute_name, child_inclusion_tree|
+          # Skip the sentinal value, but we need to preserve it for siblings.
+          next if attribute_name == :_include
 
-        serializer = JSONAPI::Serializer.find_serializer(root_object, options)
-        unformatted_attr_name = serializer.unformat_name(attribute_name).to_sym
+          serializer = JSONAPI::Serializer.find_serializer(root_object, options)
+          unformatted_attr_name = serializer.unformat_name(attribute_name).to_sym
 
-        # We know the name of this relationship, but we don't know where it is stored internally.
-        # Check if it is a has_one or has_many relationship.
-        object = nil
-        is_collection = false
-        is_valid_attr = false
-        if serializer.has_one_relationships.has_key?(unformatted_attr_name)
-          is_valid_attr = true
-          attr_data = serializer.has_one_relationships[unformatted_attr_name]
-          object = serializer.has_one_relationship(unformatted_attr_name, attr_data)
-        elsif serializer.has_many_relationships.has_key?(unformatted_attr_name)
-          is_valid_attr = true
-          is_collection = true
-          attr_data = serializer.has_many_relationships[unformatted_attr_name]
-          object = serializer.has_many_relationship(unformatted_attr_name, attr_data)
-        end
-
-        if !is_valid_attr
-          raise JSONAPI::Serializer::InvalidIncludeError.new(
-            "'#{attribute_name}' is not a valid include.")
-        end
-
-        if attribute_name != serializer.format_name(attribute_name)
-          expected_name = serializer.format_name(attribute_name)
-
-          raise JSONAPI::Serializer::InvalidIncludeError.new(
-            "'#{attribute_name}' is not a valid include.  Did you mean '#{expected_name}' ?"
-          )
-        end
-
-        # We're finding relationships for compound documents, so skip anything that doesn't exist.
-        next if object.nil?
-
-        # Full linkage: a request for comments.author MUST automatically include comments
-        # in the response.
-        objects = is_collection ? object : [object]
-        if child_inclusion_tree[:_include] == true
-          # Include the current level objects if the _include attribute exists.
-          # If it is not set, that indicates that this is an inner path and not a leaf and will
-          # be followed by the recursion below.
-          objects.each do |obj|
-            obj_serializer = JSONAPI::Serializer.find_serializer(obj, options)
-            # Use keys of ['posts', '1'] for the results to enforce uniqueness.
-            # Spec: A compound document MUST NOT include more than one resource object for each
-            # type and id pair.
-            # http://jsonapi.org/format/#document-structure-compound-documents
-            key = [obj_serializer.type, obj_serializer.id]
-
-            # This is special: we know at this level if a child of this parent will also been
-            # included in the compound document, so we can compute exactly what linkages should
-            # be included by the object at this level. This satisfies this part of the spec:
-            #
-            # Spec: Resource linkage in a compound document allows a client to link together
-            # all of the included resource objects without having to GET any relationship URLs.
-            # http://jsonapi.org/format/#document-structure-resource-relationships
-            current_child_includes = []
-            inclusion_names = child_inclusion_tree.keys.reject { |k| k == :_include }
-            inclusion_names.each do |inclusion_name|
-              if child_inclusion_tree[inclusion_name][:_include]
-                current_child_includes << inclusion_name
-              end
-            end
-
-            # Special merge: we might see this object multiple times in the course of recursion,
-            # so merge the include_linkages each time we see it to load all the relevant linkages.
-            current_child_includes += results[key] && results[key][:include_linkages] || []
-            current_child_includes.uniq!
-            results[key] = {object: obj, include_linkages: current_child_includes}
+          # We know the name of this relationship, but we don't know where it is stored internally.
+          # Check if it is a has_one or has_many relationship.
+          object = nil
+          is_collection = false
+          is_valid_attr = false
+          if serializer.has_one_relationships.has_key?(unformatted_attr_name)
+            is_valid_attr = true
+            attr_data = serializer.has_one_relationships[unformatted_attr_name]
+            object = serializer.has_one_relationship(unformatted_attr_name, attr_data)
+          elsif serializer.has_many_relationships.has_key?(unformatted_attr_name)
+            is_valid_attr = true
+            is_collection = true
+            attr_data = serializer.has_many_relationships[unformatted_attr_name]
+            object = serializer.has_many_relationship(unformatted_attr_name, attr_data)
           end
-        end
 
-        # Recurse deeper!
-        if !child_inclusion_tree.empty?
-          # For each object we just loaded, find all deeper recursive relationships.
-          objects.each do |obj|
-            find_recursive_relationships(obj, child_inclusion_tree, results, options)
+          if !is_valid_attr
+            raise JSONAPI::Serializer::InvalidIncludeError.new(
+              "'#{attribute_name}' is not a valid include.")
+          end
+
+          if attribute_name != serializer.format_name(attribute_name)
+            expected_name = serializer.format_name(attribute_name)
+
+            raise JSONAPI::Serializer::InvalidIncludeError.new(
+              "'#{attribute_name}' is not a valid include.  Did you mean '#{expected_name}' ?"
+            )
+          end
+
+          # We're finding relationships for compound documents, so skip anything that doesn't exist.
+          next if object.nil?
+
+          # Full linkage: a request for comments.author MUST automatically include comments
+          # in the response.
+          objects = is_collection ? object : [object]
+          if child_inclusion_tree[:_include] == true
+            # Include the current level objects if the _include attribute exists.
+            # If it is not set, that indicates that this is an inner path and not a leaf and will
+            # be followed by the recursion below.
+            objects.each do |obj|
+              obj_serializer = JSONAPI::Serializer.find_serializer(obj, options)
+              # Use keys of ['posts', '1'] for the results to enforce uniqueness.
+              # Spec: A compound document MUST NOT include more than one resource object for each
+              # type and id pair.
+              # http://jsonapi.org/format/#document-structure-compound-documents
+              key = [obj_serializer.type, obj_serializer.id]
+
+              # This is special: we know at this level if a child of this parent will also been
+              # included in the compound document, so we can compute exactly what linkages should
+              # be included by the object at this level. This satisfies this part of the spec:
+              #
+              # Spec: Resource linkage in a compound document allows a client to link together
+              # all of the included resource objects without having to GET any relationship URLs.
+              # http://jsonapi.org/format/#document-structure-resource-relationships
+              current_child_includes = []
+              inclusion_names = child_inclusion_tree.keys.reject { |k| k == :_include }
+              inclusion_names.each do |inclusion_name|
+                if child_inclusion_tree[inclusion_name][:_include]
+                  current_child_includes << inclusion_name
+                end
+              end
+
+              # Special merge: we might see this object multiple times in the course of recursion,
+              # so merge the include_linkages each time we see it to load all the relevant linkages.
+              current_child_includes += results[key] && results[key][:include_linkages] || []
+              current_child_includes.uniq!
+              results[key] = {object: obj, include_linkages: current_child_includes}
+            end
+          end
+
+          # Recurse deeper!
+          if !child_inclusion_tree.empty?
+            # For each object we just loaded, find all deeper recursive relationships.
+            objects.each do |obj|
+              find_recursive_relationships(obj, child_inclusion_tree, results, options)
+            end
           end
         end
       end

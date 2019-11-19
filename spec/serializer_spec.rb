@@ -1,6 +1,7 @@
 require 'active_model/errors'
 require 'active_model/naming'
 require 'active_model/translation'
+require 'pry'
 
 describe JSONAPI::Serializer do
   def serialize_primary(object, options = {})
@@ -16,6 +17,7 @@ describe JSONAPI::Serializer do
       primary_data = serialize_primary(nil, {serializer: MyApp::PostSerializer})
       expect(primary_data).to be_nil
     end
+
     it 'can serialize primary data for a simple object' do
       post = create(:post)
       primary_data = serialize_primary(post, {serializer: MyApp::SimplestPostSerializer})
@@ -31,6 +33,7 @@ describe JSONAPI::Serializer do
         },
       })
     end
+
     it 'can serialize primary data for a simple object with a long name' do
       long_comment = create(:long_comment, post: create(:post))
       primary_data = serialize_primary(long_comment, {serializer: MyApp::LongCommentSerializer})
@@ -59,6 +62,7 @@ describe JSONAPI::Serializer do
         },
       })
     end
+
     it 'can serialize primary data for a simple object with resource-level metadata' do
       post = create(:post)
       primary_data = serialize_primary(post, {serializer: MyApp::PostSerializerWithMetadata})
@@ -80,6 +84,7 @@ describe JSONAPI::Serializer do
         },
       })
     end
+
     context 'without any linkage includes (default)' do
       it 'can serialize primary data for an object with to-one and to-many relationships' do
         post = create(:post)
@@ -111,6 +116,7 @@ describe JSONAPI::Serializer do
           },
         })
       end
+
       it 'does not include relationship links if relationship_{self_link,_related_link} are nil' do
         post = create(:post)
         primary_data = serialize_primary(post, {serializer: MyApp::PostSerializerWithoutLinks})
@@ -129,6 +135,7 @@ describe JSONAPI::Serializer do
           },
         })
       end
+
       it 'does not include id when it is nil' do
         post = create(:post)
         post.id = nil
@@ -145,6 +152,7 @@ describe JSONAPI::Serializer do
           },
         })
       end
+
       it 'serializes object when multiple attributes are declared once' do
         post = create(:post)
         primary_data = serialize_primary(post, {serializer: MyApp::MultipleAttributesSerializer})
@@ -161,6 +169,7 @@ describe JSONAPI::Serializer do
         })
       end
     end
+
     context 'with linkage includes' do
       it 'can serialize primary data for a null to-one relationship' do
         post = create(:post, author: nil)
@@ -200,6 +209,7 @@ describe JSONAPI::Serializer do
           },
         })
       end
+
       it 'can serialize primary data for a simple to-one relationship' do
         post = create(:post, :with_author)
         options = {
@@ -241,6 +251,7 @@ describe JSONAPI::Serializer do
           },
         })
       end
+
       it 'can serialize primary data for an empty to-many relationship' do
         post = create(:post, long_comments: [])
         options = {
@@ -279,6 +290,7 @@ describe JSONAPI::Serializer do
           },
         })
       end
+
       it 'can serialize primary data for a simple to-many relationship' do
         long_comments = create_list(:long_comment, 2)
         post = create(:post, long_comments: long_comments)
@@ -328,6 +340,7 @@ describe JSONAPI::Serializer do
         })
       end
     end
+
     it 'can serialize primary data for an empty serializer with no attributes' do
       post = create(:post)
       primary_data = serialize_primary(post, {serializer: MyApp::EmptySerializer})
@@ -339,6 +352,7 @@ describe JSONAPI::Serializer do
         },
       })
     end
+
     it 'can find the correct serializer by object class name' do
       post = create(:post)
       primary_data = serialize_primary(post)
@@ -502,22 +516,26 @@ describe JSONAPI::Serializer do
     it 'can serialize a nil object' do
       expect(JSONAPI::Serializer.serialize(nil)).to eq({'data' => nil})
     end
+
     it 'can serialize a nil object with includes' do
       # Also, the include argument is not validated in this case because we don't know the type.
       data = JSONAPI::Serializer.serialize(nil, include: ['fake'])
       expect(data).to eq({'data' => nil, 'included' => []})
     end
+
     it 'can serialize an empty array' do
       # Also, the include argument is not validated in this case because we don't know the type.
       data = JSONAPI::Serializer.serialize([], is_collection: true, include: ['fake'])
       expect(data).to eq({'data' => [], 'included' => []})
     end
+
     it 'can serialize a simple object' do
       post = create(:post)
       expect(JSONAPI::Serializer.serialize(post)).to eq({
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+
     it 'can include a top level jsonapi node' do
       post = create(:post)
       jsonapi_version = {'version' => '1.0'}
@@ -526,6 +544,7 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+
     it 'can include a top level meta node' do
       post = create(:post)
       meta = {authors: ['Yehuda Katz', 'Steve Klabnik'], copyright: 'Copyright 2015 Example Corp.'}
@@ -534,6 +553,7 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+
     it 'can include a top level links node' do
       post = create(:post)
       links = {self: 'http://example.com/posts'}
@@ -542,6 +562,7 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+
     # TODO: remove this code on next major release
     it 'can include a top level errors node - deprecated' do
       post = create(:post)
@@ -562,15 +583,18 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+
     it 'can serialize a single object with an `each` method by passing skip_collection_check: true' do
       post = create(:post)
       post.define_singleton_method(:each) do
         "defining this just to defeat the duck-type check"
       end
+
       expect(JSONAPI::Serializer.serialize(post, skip_collection_check: true)).to eq({
         'data' => serialize_primary(post, {serializer: MyApp::PostSerializer}),
       })
     end
+
     it 'can serialize a collection' do
       posts = create_list(:post, 2)
       expect(JSONAPI::Serializer.serialize(posts, is_collection: true)).to eq({
@@ -580,6 +604,7 @@ describe JSONAPI::Serializer do
         ],
       })
     end
+
     it 'raises AmbiguousCollectionError if is_collection is not passed' do
       posts = create_list(:post, 2)
       error = JSONAPI::Serializer::AmbiguousCollectionError
@@ -596,10 +621,12 @@ describe JSONAPI::Serializer do
       options = {serializer: MyApp::PostSerializer}
       expect(JSONAPI::Serializer.serialize(nil, options)).to eq({'data' => nil})
     end
+
     it 'can serialize an empty array when given serializer' do
       options = {is_collection: true, serializer: MyApp::PostSerializer}
       expect(JSONAPI::Serializer.serialize([], options)).to eq({'data' => []})
     end
+
     it 'can serialize a simple object when given serializer' do
       post = create(:post)
       options = {serializer: MyApp::SimplestPostSerializer}
@@ -607,6 +634,7 @@ describe JSONAPI::Serializer do
         'data' => serialize_primary(post, {serializer: MyApp::SimplestPostSerializer}),
       })
     end
+
     it 'handles include of nil to-one relationship with compound document' do
       post = create(:post)
 
@@ -619,6 +647,7 @@ describe JSONAPI::Serializer do
         'included' => [],
       })
     end
+
     it 'handles include of simple to-one relationship with compound document' do
       post = create(:post, :with_author)
 
@@ -633,6 +662,7 @@ describe JSONAPI::Serializer do
         ],
       })
     end
+
     it 'handles include of empty to-many relationships with compound document' do
       post = create(:post, :with_author, long_comments: [])
 
@@ -645,6 +675,7 @@ describe JSONAPI::Serializer do
         'included' => [],
       })
     end
+
     it 'handles include of to-many relationships with compound document' do
       long_comments = create_list(:long_comment, 2)
       post = create(:post, :with_author, long_comments: long_comments)
@@ -661,6 +692,7 @@ describe JSONAPI::Serializer do
         ],
       })
     end
+
     it 'only includes one copy of each referenced relationship' do
       long_comment = create(:long_comment)
       long_comments = [long_comment, long_comment]
@@ -677,6 +709,7 @@ describe JSONAPI::Serializer do
         ],
       })
     end
+
     it 'handles circular-referencing relationships with compound document' do
       long_comments = create_list(:long_comment, 2)
       post = create(:post, :with_author, long_comments: long_comments)
@@ -696,10 +729,12 @@ describe JSONAPI::Serializer do
         ],
       })
     end
+
     it 'errors if include is not a defined attribute' do
       user = create(:user)
       expect { JSONAPI::Serializer.serialize(user, include: ['fake-attr']) }.to raise_error
     end
+
     it 'handles recursive loading of relationships' do
       user = create(:user)
       long_comments = create_list(:long_comment, 2, user: user)
@@ -737,6 +772,7 @@ describe JSONAPI::Serializer do
       expect(actual_data['included']).to eq(expected_data['included'])
       expect(actual_data).to eq(expected_data)
     end
+
     it 'handles recursive loading of multiple to-one relationships on children' do
       first_user = create(:user)
       second_user = create(:user)
@@ -774,6 +810,7 @@ describe JSONAPI::Serializer do
       expect(actual_data['included']).to eq(expected_data['included'])
       expect(actual_data).to eq(expected_data)
     end
+
     it 'includes linkage in compounded resources only if the immediate parent was also included' do
       comment_user = create(:user)
       long_comments = [create(:long_comment, user: comment_user)]
@@ -802,6 +839,7 @@ describe JSONAPI::Serializer do
       expect(actual_data['included']).to eq(expected_data['included'])
       expect(actual_data).to eq(expected_data)
     end
+
     it 'handles recursive loading of to-many relationships with overlapping include paths' do
       user = create(:user)
       long_comments = create_list(:long_comment, 2, user: user)
@@ -884,6 +922,7 @@ describe JSONAPI::Serializer do
           }
         })
       end
+
       it 'allows to limit fields(relationships) for serialized resource' do
         first_user = create(:user)
         second_user = create(:user)
@@ -909,6 +948,7 @@ describe JSONAPI::Serializer do
           }
         })
       end
+
       it "allows also to pass specific fields as array instead of comma-separates values" do
         first_user = create(:user)
         second_user = create(:user)
@@ -930,6 +970,7 @@ describe JSONAPI::Serializer do
           }
         })
       end
+
       it 'allows to limit fields(attributes and relationships) for included resources' do
         first_user = create(:user)
         second_user = create(:user)
@@ -983,18 +1024,21 @@ describe JSONAPI::Serializer do
       result = JSONAPI::Serializer.send(:parse_relationship_paths, [])
       expect(result).to eq({})
     end
+
     it 'correctly handles single-level relationship paths' do
       result = JSONAPI::Serializer.send(:parse_relationship_paths, ['foo'])
       expect(result).to eq({
         'foo' => {_include: true}
       })
     end
+
     it 'correctly handles multi-level relationship paths' do
       result = JSONAPI::Serializer.send(:parse_relationship_paths, ['foo.bar'])
       expect(result).to eq({
         'foo' => {_include: true, 'bar' => {_include: true}}
       })
     end
+
     it 'correctly handles multi-level relationship paths with same parent' do
       paths = ['foo', 'foo.bar']
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
@@ -1002,6 +1046,7 @@ describe JSONAPI::Serializer do
         'foo' => {_include: true, 'bar' => {_include: true}}
       })
     end
+
     it 'correctly handles multi-level relationship paths with different parent' do
       paths = ['foo', 'bar', 'bar.baz']
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
@@ -1010,6 +1055,7 @@ describe JSONAPI::Serializer do
         'bar' => {_include: true, 'baz' => {_include: true}},
       })
     end
+
     it 'correctly handles three-leveled path' do
       paths = ['foo', 'foo.bar', 'foo.bar.baz']
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
@@ -1017,6 +1063,7 @@ describe JSONAPI::Serializer do
         'foo' => {_include: true, 'bar' => {_include: true, 'baz' => {_include: true}}}
       })
     end
+
     it 'correctly handles three-leveled path with skipped middle' do
       paths = ['foo', 'foo.bar.baz']
       result = JSONAPI::Serializer.send(:parse_relationship_paths, paths)
@@ -1025,6 +1072,7 @@ describe JSONAPI::Serializer do
       })
     end
   end
+
   describe 'if/unless handling with contexts' do
     it 'can be used to show/hide attributes' do
       post = create(:post)
@@ -1068,6 +1116,7 @@ describe JSONAPI::Serializer do
       expect(data['data']['attributes']).to_not have_key('body')
     end
   end
+
   describe 'context' do
     it 'is passed through all relationship serializers' do
       # Force long_comments to be serialized by the context-sensitive serializer.
@@ -1113,6 +1162,7 @@ describe JSONAPI::Serializer do
         'related' => '/posts/1/author'
       })
     end
+
     it 'adds base_url to links if passed' do
       long_comments = create_list(:long_comment, 1)
       post = create(:post, long_comments: long_comments)
@@ -1123,6 +1173,7 @@ describe JSONAPI::Serializer do
         'related' => 'http://example.com/posts/1/author'
       })
     end
+
     it 'uses overriden base_url method if it exists' do
       long_comments = create_list(:long_comment, 1)
       post = create(:post, long_comments: long_comments)
@@ -1231,6 +1282,56 @@ describe JSONAPI::Serializer do
       expect(actual_data['data']).to eq(expected_data['data'])
       expect(actual_data['included']).to eq(expected_data['included'])
       expect(actual_data).to eq(expected_data)
+    end
+  end
+
+  describe 'instrumentation' do
+    let(:post) { create(:post, :with_author) }
+    let(:events) { [] }
+
+    before do
+      ActiveSupport::Notifications.subscribe(notification_name) do |*args|
+        events << ActiveSupport::Notifications::Event.new(*args)
+      end
+    end
+
+    describe 'serialize_primary' do
+      let(:notification_name) { 'render.jsonapi_serializers.serialize_primary' }
+
+      it 'sends an event for a single serialize call' do
+        JSONAPI::Serializer.serialize(post)
+
+        expect(events.length).to eq(1)
+        expect(events[0].name).to eq(notification_name)
+        expect(events[0].payload).to eq({class_name: "MyApp::Post"})
+      end
+
+      it 'sends events for includes' do
+        JSONAPI::Serializer.serialize(post, include: ['author'])
+
+        expect(events.length).to eq(2)
+        expect(events[0].payload).to eq({class_name: "MyApp::Post"})
+        expect(events[1].payload).to eq({class_name: "MyApp::User"})
+      end
+    end
+
+    describe 'find_recursive_relationships' do
+      let(:notification_name) { 'render.jsonapi_serializers.find_recursive_relationships' }
+
+      it 'does not send event when there are no includes' do
+        JSONAPI::Serializer.serialize(post)
+        expect(events.length).to eq(0)
+      end
+
+      it 'sends events for includes' do
+        JSONAPI::Serializer.serialize(post, include: ['author'])
+
+        expect(events.length).to eq(2)
+        expect(events[0].name).to eq(notification_name)
+        expect(events[0].payload).to eq({class_name: "MyApp::User"})
+        expect(events[1].name).to eq(notification_name)
+        expect(events[1].payload).to eq({class_name: "MyApp::Post"})
+      end
     end
   end
 end
