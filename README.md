@@ -713,22 +713,29 @@ end
 
 # config/initializers/jsonapi_mimetypes.rb
 # Without this mimetype registration, controllers will not automatically parse JSON API params.
+
+# Rails 4
 module JSONAPI
   MIMETYPE = "application/vnd.api+json"
 end
 Mime::Type.register(JSONAPI::MIMETYPE, :api_json)
-
-# Rails 4
 ActionDispatch::ParamsParser::DEFAULT_PARSERS[Mime::Type.lookup(JSONAPI::MIMETYPE)] = lambda do |body|
   JSON.parse(body)
 end
 
-# Rails 5 moved DEFAULT_PARSERS
-ActionDispatch::Http::Parameters::DEFAULT_PARSERS[:api_json] = lambda do |body|
-  JSON.parse(body)
-end
-ActionDispatch::Request.parameter_parsers = ActionDispatch::Request::DEFAULT_PARSERS
+# Rails 5 Option 1: Add another synonym to the json mime type
+json_mime_type_synonyms = %w[
+  text/x-json
+  application/jsonrequest
+  application/vnd.api+json
+]
+Mime::Type.register('application/json', :json, json_mime_type_synonyms)
 
+# Rails 5 Option 2: Add a separate mime type
+Mime::Type.register('application/vnd.api+json', :api_json)
+ActionDispatch::Request.parameter_parsers[:api_json] = -> (body) {
+  JSON.parse(body)
+}
 ```
 
 ## Sinatra example
